@@ -11,7 +11,7 @@
 #include <time.h>
 
 // Paramètres du jeu
-#define LARGEUR_MAX 42 		// nb max de fils pour un noeud (= nb max de coups possibles)
+#define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
 
 #define TEMPS 5		// temps de calcul pour un coup avec MCTS (en secondes)
 
@@ -354,30 +354,35 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	// créer les premiers noeuds:
 	coups = coups_possibles(racine->etat);
+
 	int k = 0;
 	Noeud * enfant;
-
 	while ( coups[k] != NULL) {
 		enfant = ajouterEnfant(racine, coups[k]);
 		k++;
 	}
 
 
-	meilleur_coup = coups[ rand()%k ]; // choix aléatoire
+	meilleur_coup = coups[ rand()%k ]; // choix aléatoire A SUPPRIMER
 
 	/*  TODO :
 		- supprimer la sélection aléatoire du meilleur coup ci-dessus
 		- implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
-
+		
 	int iter = 0;
 
 	do {
 
+		//Sélectionner
+		Noeud * n = selectionner(racine);
+		//Developper (selection du chemin/fils a prendre)
+		Noeud * s = developper(n);
+		//simuler ce chemin
+		int res = simuler(s);
+		//maj de tout (B val, N, etc)
 
 
 		// à compléter par l'algorithme MCTS-UCT...
-
-
 
 
 		toc = clock();
@@ -394,6 +399,58 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	freeNoeud(racine);
 	free (coups);
 }
+
+Noeud selectionner(Noeud * n){
+
+	Coup ** coups;
+	coups = coups_possibles[n->etat];
+
+	int nb_coups_possible=0;
+	while(coups[nb_coups_possible] != NULL){
+		nb_coups_possible++;
+	}
+
+	if(n->nb_enfants < nb_coups_possible){ //  tous les fils ne possède pas de B valeur
+		//faire fonction qui prend un fils tableau
+		//return ce fils
+
+	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
+		int i = 0;
+		int Bmax = n->enfant[i]->B;
+		Noeud * fils = n->enfant[i];
+		for(i=1; i<nb_coups_possible;i++){
+			if(n->enfant[i]->B > Bmax){
+				Bmax = n->enfant[i]->B;
+				fils =  n->enfant[i];
+			}
+		}
+		return selectionner(fils);
+	}
+
+}
+
+Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
+
+}
+
+int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
+	Coup ** coups = coups_possibles[n->etat];
+	Noeud * depart = nouveauNoeud(NULL, NULL);
+	depart->etat = copieEtat(n->etat);
+	int fini = 0
+	while( !fini ){
+		//rand sur i
+		jouerCoup(depart->etat,coups[i]);
+		fini = testFin(depart->etat); // note à moi même : ne pas simuler si dejà une feuille
+	}
+
+	// mettre à jour les valeurs
+
+
+
+}
+
+
 
 int main(void) {
 

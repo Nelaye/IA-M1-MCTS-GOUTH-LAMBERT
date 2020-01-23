@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 
 // Paramètres du jeu
 #define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
@@ -42,7 +43,6 @@ typedef struct EtatSt {
 typedef struct {
 	// TODO: à compléter par la définition d'un coup
 
-	/* par exemple, pour morpion: */
 	int ligne;
 	int colonne;
 
@@ -165,27 +165,46 @@ int jouerCoup( Etat * etat, Coup * coup ) {
 
 // Retourne une liste de coups possibles à partir d'un etat
 // (tableau de pointeurs de coups se terminant par NULL)
-Coup ** coups_possibles( Etat * etat ) {
+Coup ** coups_possibles( Etat * etat , int *k) {
 
 	Coup ** coups = (Coup **) malloc((1+LARGEUR_MAX) * sizeof(Coup *) );
 
-	int k = 0;
 
 	// TODO: à compléter
 
 	/* par exemple */
 	int i,j;
+	i = 0;
+	*k = 0;
+	/*
 	for(i=0; i < LIGNE; i++) {
 		for (j=0; j < COLONNE; j++) {
 			if ( etat->plateau[i][j] == ' ' ) {
-				coups[k] = nouveauCoup(i,j);
-				k++;
+				coups[*k] = nouveauCoup(i,j);
+				*k++;
 			}
 		}
 	}
-	/* fin de l'exemple */
+	*/
+	
+	for (j=0; j < COLONNE; j++) { 
+		//printf("colonne %d\n",j);
+		while(i<LIGNE && etat->plateau[i][j] != ' '){ // je remonte dans le plateau jusqu'a avoir un ligne où c'est libre
+			i++;
+			//printf("recherche d'une case libre \n");
+		}
+		if(i<LIGNE){ // si la colonne n'est pas remplie j'ajoute un coup
+		//printf("ajout \n");
+			coups[*k] = nouveauCoup(i,j);
+			//printf("k=%d\n",*k);
+			*k = *k +1;
+		
+		}
+		i = 0;
+	}
 
-	coups[k] = NULL;
+	coups[*k] = NULL;
+	//printf("il y a %d\n",*k);
 
 	return coups;
 }
@@ -206,6 +225,7 @@ typedef struct NoeudSt {
 	// POUR MCTS:
 	int nb_victoires;
 	int nb_simus;
+	int B;
 
 } Noeud;
 
@@ -272,9 +292,9 @@ FinDePartie testFin( Etat * etat ) {
 
 	for (i=0;i < LIGNE; i++) {
 		for (j=0; j < COLONNE; j++) {
-			printf("\nje suis dans le cas i=%d et j=%d\n",i,j);
+			//printf("\nje suis dans le cas i=%d et j=%d\n",i,j);
 			if ( etat->plateau[i][j] != ' ') {
-				printf("c'est vide\n");
+				//printf("c'est vide\n");
 
 				n++;	// nb coups joués
 
@@ -282,45 +302,45 @@ FinDePartie testFin( Etat * etat ) {
 				k=0;
 
 				while ( k < 4 && i+k < COLONNE && etat->plateau[i+k][j] == etat->plateau[i][j] ){
-					printf("while ligne\n");
+					//printf("while ligne\n");
 					k++;
 				}
 
 				if ( k == 4 ){
-					printf("LIGNE");
+					//printf("LIGNE");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 
 				// colonnes
 				k=0;
 				while ( k < 4 && j+k < LIGNE && etat->plateau[i][j+k] == etat->plateau[i][j] ){
-					printf("while colonne\n");
+					//printf("while colonne\n");
 					k++;
 				}
 
 				if ( k == 4 ){
-					printf("COLONNE");
+					//printf("COLONNE");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 
 				// diagonales
 				k=0;
 				while ( k < 4 && i+k < COLONNE && j+k < LIGNE && etat->plateau[i+k][j+k] == etat->plateau[i][j] ){
-					printf("while diag 1\n");
+					//printf("while diag 1\n");
 					k++;
 				}
 				if ( k == 4 ){
-					printf("DIAG 1");
+					//printf("DIAG 1");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 
 				k=0;
 				while ( k < 4 && i+k < COLONNE && j-k >= LIGNE && etat->plateau[i+k][j-k] == etat->plateau[i][j] ){
-					printf("while diag 2\n");
+					//printf("while diag 2\n");
 					k++;
 				}
 				if ( k == 4 ){
-					printf("DIAG 2");
+					//printf("DIAG 2");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 			}
@@ -353,9 +373,9 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	racine->etat = copieEtat(etat);
 
 	// créer les premiers noeuds:
-	coups = coups_possibles(racine->etat);
-
 	int k = 0;
+	coups = coups_possibles(racine->etat, &k);
+
 	Noeud * enfant;
 	while ( coups[k] != NULL) {
 		enfant = ajouterEnfant(racine, coups[k]);
@@ -403,7 +423,8 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 Noeud selectionner(Noeud * n){
 
 	Coup ** coups;
-	coups = coups_possibles[n->etat];
+	int k = 0;
+	coups = coups_possibles(n->etat, &k);
 
 	int nb_coups_possible=0;
 	while(coups[nb_coups_possible] != NULL){
@@ -416,12 +437,14 @@ Noeud selectionner(Noeud * n){
 
 	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
 		int i = 0;
-		int Bmax = n->enfant[i]->B;
-		Noeud * fils = n->enfant[i];
+		int Bmax = n->enfants[i]->B;
+		Noeud * fils = n->enfants[i];
+
 		for(i=1; i<nb_coups_possible;i++){
-			if(n->enfant[i]->B > Bmax){
-				Bmax = n->enfant[i]->B;
-				fils =  n->enfant[i];
+
+			if(n->enfants[i]->B > Bmax){
+				Bmax = n->enfants[i]->B;
+				fils =  n->enfants[i];
 			}
 		}
 		return selectionner(fils);
@@ -434,20 +457,32 @@ Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
 }
 
 int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
-	Coup ** coups = coups_possibles[n->etat];
-	Noeud * depart = nouveauNoeud(NULL, NULL);
-	depart->etat = copieEtat(n->etat);
-	int fini = 0
-	while( !fini ){
-		//rand sur i
-		jouerCoup(depart->etat,coups[i]);
-		fini = testFin(depart->etat); // note à moi même : ne pas simuler si dejà une feuille
+	
+	
+	Etat * e = copieEtat(n->etat);
+	int fini = 0;
+	int k = 0;
+	int profondeur = 0 ;
+
+	while(!fini ){
+		Coup ** coups = coups_possibles(e, &k);
+		if(k==0){ //plus de coups possible
+			fini = 1;
+			continue;
+		}
+		srand(time(NULL)); 
+		int i = rand()%k;
+
+		jouerCoup(e , coups[i]);
+		//afficheJeu(e);
+
+		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		//printf("Coup numéro : %d\n", ++profondeur);
 	}
+	printf(" résultat : %d\n",fini);
+	free ( e );
 
 	// mettre à jour les valeurs
-
-
-
 }
 
 
@@ -459,7 +494,13 @@ int main(void) {
 
 	// initialisation
 	Etat * etat = etat_initial();
+	Noeud * n = nouveauNoeud(NULL,NULL);
+	n->etat = etat;
+	simuler(n);
+	free( etat );
+	free( n );
 
+/*
 	// Choisir qui commence :
 	printf("Qui commence (0 : humain, 1 : ordinateur) ? ");
 	scanf("%d", &(etat->joueur) );
@@ -496,6 +537,7 @@ int main(void) {
 		printf(" Match nul !  \n");
 	else
 		printf( "** BRAVO, l'ordinateur a perdu  **\n");
+*/
 
 	return 0;
 }

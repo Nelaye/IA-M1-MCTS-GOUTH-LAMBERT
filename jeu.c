@@ -19,6 +19,7 @@
 #define LIGNE 6
 #define COLONNE 7
 
+#define C 0.2	//compromis entre exploitation et exploration dans le calcule de la B valeur
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -456,6 +457,29 @@ Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
 
 }
 
+/**
+ * calcule la B valeur du noeud n et le met à jour dans la structure
+ * profondeur arbre %2 = profondeur 
+ * 0: MIN / 1: MAX
+*/
+  
+void B(Noeud* n, int profondeur){
+	//exploitation
+	float exploit 	= (n->nb_victoires)/(n->nb_simus);
+
+	//exploration
+	Noeud* parent 	= n->parent;
+	float ratio  	= log(parent->nb_simus) / (n->nb_simus);
+	float explo 	= C*(sqrt(ratio)); 
+
+	if(profondeur == 0){// ligne MIN
+		n->B 		= -(exploit + explo);
+	} else {			// ligne MAX
+		n->B		= exploit + explo;
+	}
+	 
+
+}
 int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 	
 	

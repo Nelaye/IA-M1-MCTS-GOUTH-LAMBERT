@@ -227,6 +227,7 @@ typedef struct NoeudSt {
 	int nb_victoires;
 	int nb_simus;
 	int B;
+	int profondeur;	
 
 } Noeud;
 
@@ -241,10 +242,12 @@ Noeud * nouveauNoeud (Noeud * parent, Coup * coup ) {
 		jouerCoup ( noeud->etat, coup );
 		noeud->coup = coup;
 		noeud->joueur = AUTRE_JOUEUR(parent->joueur);
+		noeud->profondeur = parent->profondeur +1;
 	}else {
 		noeud->etat = NULL;
 		noeud->coup = NULL;
 		noeud->joueur = 0;
+		noeud->profondeur = 0;
 	}
 	noeud->parent = parent;
 	noeud->nb_enfants = 0;
@@ -459,11 +462,9 @@ Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
 
 /**
  * calcule la B valeur du noeud n et le met à jour dans la structure
- * profondeur arbre %2 = profondeur 
- * 0: MIN / 1: MAX
 */
   
-void B(Noeud* n, int profondeur){
+void B(Noeud* n){
 	//exploitation
 	float exploit 	= (n->nb_victoires)/(n->nb_simus);
 
@@ -472,7 +473,7 @@ void B(Noeud* n, int profondeur){
 	float ratio  	= log(parent->nb_simus) / (n->nb_simus);
 	float explo 	= C*(sqrt(ratio)); 
 
-	if(profondeur == 0){// ligne MIN
+	if(n->profondeur%2 == 1){// ligne MIN
 		n->B 		= -(exploit + explo);
 	} else {			// ligne MAX
 		n->B		= exploit + explo;

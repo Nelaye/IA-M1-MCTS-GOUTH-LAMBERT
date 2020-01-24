@@ -1,1 +1,1 @@
-# IA-M1-MCTS-GOUTH-LAMBERT
+# IA-M1-MCTS-GOUTH-LAMBERTgcc ./jeu.c -o jeu -lm

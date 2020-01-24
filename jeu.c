@@ -282,6 +282,15 @@ void freeNoeud ( Noeud * noeud) {
 	free(noeud);
 }
 
+void freeCoups (Coup ** coups){
+    int i = 0;
+    while(coups[i] != NULL){
+        free(coups[i]);
+        i++;
+    }
+    
+}
+
 // Test si l'état est un état terminal
 // et retourne NON, MATCHNUL, ORDI_GAGNE ou HUMAIN_GAGNE
 FinDePartie testFin( Etat * etat ) {
@@ -421,25 +430,39 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	// Penser à libérer la mémoire :
 	freeNoeud(racine);
+    freeCoups(coups);
 	free (coups);
 }
 
+/**
+ *  retourne le noeud à partir duquel developper 
+*/
 Noeud selectionner(Noeud * n){
 
-	Coup ** coups;
 	int k = 0;
-	coups = coups_possibles(n->etat, &k);
-
 	int nb_coups_possible=0;
+	
+    Coup ** coups = coups_possibles(n->etat, &k);
+
 	while(coups[nb_coups_possible] != NULL){
 		nb_coups_possible++;
 	}
 
-	if(n->nb_enfants < nb_coups_possible){ //  tous les fils ne possède pas de B valeur
-		//faire fonction qui prend un fils tableau
-		//return ce fils
+	//check si il existe un fils non simulé
+	int is_not_simu = 0;
+    int enfant = 0;
+    for(int i = 0; i < n->nb_enfants; i++){
+        if(n->enfants[i]->nb_simus == 0){ //si l'enfant i n'a pas été simulé
+            is_not_simu = 1;
+            enfant = i;
+        }
+    }
+    
+	if(is_not_simu){ //  au moins un fils n'est pas simulé donc pas de B valeur pour lui
+        freeCoups(coups);
+        return n->enfant[i];
 
-	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
+	}else{ // tous les fils on été simulé => on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
 		int i = 0;
 		int Bmax = n->enfants[i]->B;
 		Noeud * fils = n->enfants[i];
@@ -451,13 +474,18 @@ Noeud selectionner(Noeud * n){
 				fils =  n->enfants[i];
 			}
 		}
+		
+		freeCoups(coups);
 		return selectionner(fils);
 	}
 
 }
 
-Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
-
+/**
+ * 
+*/ 
+Noeud developer(Noeud * n){
+    
 }
 
 /**
@@ -503,6 +531,8 @@ int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
 		//printf("Coup numéro : %d\n", ++profondeur);
+        
+        freeCoups(coups);
 	}
 	printf(" résultat : %d\n",fini);
 	free ( e );
@@ -518,10 +548,11 @@ int main(void) {
 	FinDePartie fin;
 
 	// initialisation
-	Etat * etat = etat_initial();
 	Noeud * n = nouveauNoeud(NULL,NULL);
-	n->etat = etat;
-	simuler(n);
+	Etat * etat = etat_initial();
+    n->etat = etat;
+	
+    simuler(n);
 	free( etat );
 	free( n );
 

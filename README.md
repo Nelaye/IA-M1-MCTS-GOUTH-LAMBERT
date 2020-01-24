@@ -1,1 +1,2 @@
-# IA-M1-MCTS-GOUTH-LAMBERTgcc ./jeu.c -o jeu -lm
+# IA-M1-MCTS-GOUTH-LAMBERT
+commande compilation : gcc ./jeu.c -o jeu -lm

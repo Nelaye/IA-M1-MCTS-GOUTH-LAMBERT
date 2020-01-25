@@ -19,7 +19,7 @@
 #define LIGNE 6
 #define COLONNE 7
 
-#define C 0.2	//compromis entre exploitation et exploration dans le calcule de la B valeur
+#define C 1	//compromis entre exploitation et exploration dans le calcule de la B valeur
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -170,23 +170,9 @@ Coup ** coups_possibles( Etat * etat , int *k) {
 
 	Coup ** coups = (Coup **) malloc((1+LARGEUR_MAX) * sizeof(Coup *) );
 
-
-	// TODO: à compléter
-
-	/* par exemple */
 	int i,j;
 	i = 0;
 	*k = 0;
-	/*
-	for(i=0; i < LIGNE; i++) {
-		for (j=0; j < COLONNE; j++) {
-			if ( etat->plateau[i][j] == ' ' ) {
-				coups[*k] = nouveauCoup(i,j);
-				*k++;
-			}
-		}
-	}
-	*/
 	
 	for (j=0; j < COLONNE; j++) { 
 		//printf("colonne %d\n",j);
@@ -295,20 +281,17 @@ void freeCoups (Coup ** coups){
 // et retourne NON, MATCHNUL, ORDI_GAGNE ou HUMAIN_GAGNE
 FinDePartie testFin( Etat * etat ) {
 
-	// TODO...
-
-	/* par exemple	*/
 
 	// tester si un joueur a gagné
 	int i,j,k,n = 0;
 
 
+
 	for (i=0;i < LIGNE; i++) {
 		for (j=0; j < COLONNE; j++) {
 			//printf("\nje suis dans le cas i=%d et j=%d\n",i,j);
-			if ( etat->plateau[i][j] != ' ') {
+			if (etat->plateau[i][j] != ' ') {
 				//printf("c'est vide\n");
-
 				n++;	// nb coups joués
 
 				// lignes
@@ -362,11 +345,153 @@ FinDePartie testFin( Etat * etat ) {
 
 
 	// et sinon tester le match nul
-	if ( n == LIGNE*COLONNE )
+	if (n == LIGNE*COLONNE)
 		return MATCHNUL;
 
 	return NON;
 }
+
+
+/**
+ *  retourne le noeud à partir duquel developper => toujours une feuille
+*/
+Noeud* selectionner(Noeud * n){
+	if (n->nb_enfants == 0){
+		
+		printf("\n____selection____\n");
+		afficheJeu(n->etat);
+		return n;
+	}
+
+	int k = 0;
+	int not_simu = 0;
+	int enfant = 0;
+	for(int i = 0 ; i < k; i++){
+		if(n->enfants[i]->nb_simus==0){
+			not_simu = 1; //il y a un fils qui n'a pas été simulé on le retourne
+			enfant = i;
+		}
+	}
+
+	if(not_simu){ //  un des fils n'a jamais été simulé
+		printf("\n____selection____\n");
+		afficheJeu(n->etat);
+		return n->enfants[enfant];
+
+	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
+		int i = 0;
+		int Bmax = n->enfants[i]->B;
+		Noeud * fils = n->enfants[i];
+
+		for(i = 1; i < k; i++){
+			if(n->enfants[i]->B > Bmax){
+				Bmax = n->enfants[i]->B;
+				fils =  n->enfants[i];
+			}
+		}
+		return selectionner(fils);
+	}
+
+}
+
+/**
+ * developpe les noeuds d'une feuille en instanciant ses fils
+ * et retourne un noeud fils random pour le simuler jusqu'en fin de partie
+ */
+Noeud* developper(Noeud * n){
+	if(testFin(n->etat)!=0){ //c'est une feuille on developpe pas
+		printf("HERE");
+		return n;
+	} 
+	int k = 0;
+	Coup** coups = coups_possibles(n->etat, &k);
+	for(int i = 0; i < k ; i ++){
+		if(jouerCoup(n->etat, coups[i])){ //si le coup est jouable
+			Noeud* enfant = ajouterEnfant(n, coups[i]);
+		}
+	}
+	if(k==0){ //si on arrive a une feuille dont l'état est final
+		return n;
+	}
+	srand(time(NULL)); 
+	int i = rand()%k;
+	return n->enfants[i];
+}
+
+/**
+ * calcule la B valeur du noeud n et le met à jour dans la structure
+*/
+  
+void B(Noeud* n){
+	//printf ("\n\t==calclul du noeuf profondeur %d==\n", n->profondeur);
+	//exploitation
+	
+	float exploit 	= (n->nb_victoires)/(n->nb_simus);
+
+	//exploration
+	Noeud* parent 	= n->parent;
+	
+	float ratio  	= (log(parent->nb_simus)) / (n->nb_simus);
+	//printf("(%f)", ratio);
+	float explo 	= C*(sqrt(ratio)); 
+
+	//printf("\t%f + %f = %f\n",exploit, explo, (exploit + explo));
+	if(n->profondeur%2 == 1){// ligne MIN
+		n->B 		= -(exploit + explo);
+	} else {			// ligne MAX
+		n->B		= exploit + explo;
+	}
+	 
+}
+
+void mise_a_jour(Noeud* n, int res){
+	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
+		n->nb_simus = n->nb_simus +1;
+		if(res == 1 ){
+			n->nb_victoires = n->nb_victoires +1;
+		}
+		return;
+	} 
+
+	n->nb_simus = n->nb_simus +1;
+	if(res == 1 ){
+		n->nb_victoires = n->nb_victoires +1;
+	}
+	B(n); //met a jour la B valeur du noeud
+	mise_a_jour(n->parent, res);
+}	
+
+
+void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
+	Etat * e = copieEtat(n->etat);
+	int fini = 0;
+	int k = 0;
+
+	while(!fini){
+		Coup ** coups = coups_possibles(e, &k);
+		if(k==0){ //plus de coups possible
+			fini = 1;
+			continue;
+		}
+		srand(time(NULL)); 
+		int i = rand()%k;
+
+		jouerCoup(e , coups[i]);
+		//afficheJeu(e);
+
+		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		//printf("Coup numéro : %d\n", ++profondeur);
+
+		freeCoups(coups);
+	}
+	free (e);
+
+	mise_a_jour(n, fini);
+}
+
+
+
+
 
 /**
 * Calcule et joue un coup de l'ordinateur avec MCTS-UCT
@@ -396,12 +521,12 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	}
 
 
-	meilleur_coup = coups[ rand()%k ]; // choix aléatoire A SUPPRIMER
 
 	/*  TODO :
 		- supprimer la sélection aléatoire du meilleur coup ci-dessus
 		- implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
-		
+	*/
+
 	int iter = 0;
 
 	do {
@@ -411,12 +536,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		//Developper (selection du chemin/fils a prendre)
 		Noeud * s = developper(n);
 		//simuler ce chemin
-		int res = simuler(s);
-		//maj de tout (B val, N, etc)
-
-
-		// à compléter par l'algorithme MCTS-UCT...
-
+		simuler(s); //simule et met a jour les B valeurs
 
 		toc = clock();
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
@@ -424,7 +544,18 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	} while ( temps < tempsmax );
 
 	/* fin de l'algorithme  */
+	float BMAX = -9999; //-inf
+	int enf = 0;
+	for(int i = 0; i < k; i++){
+		if(racine->enfants[i]->B > BMAX){
+			BMAX = racine->enfants[i]->B;
+			enf = i;
+		}
+	}
 
+	meilleur_coup = coups[enf];
+
+	printf ("je joue le meilleur coup numero %d\n", enf);
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
 
@@ -434,126 +565,10 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	free (coups);
 }
 
-/**
- *  retourne le noeud à partir duquel developper => toujours une feuille
-*/
-Noeud* selectionner(Noeud * n){
-
-	Coup ** coups;
-	int k = 0;
-	coups = coups_possibles(n->etat, &k);
-
-	int not_simu = 0;
-	int enfant = 0;
-	for(int i = 0 ; i < k; i++){
-		if(n->enfants[i]->nb_simus==0){
-			not_simu = 1; //il y a un fils qui n'a pas été simulé on le retourne
-			enfant = i;
-		}
-	}
-
-	if(not_simu){ //  un des fils n'a jamais été simulé
-		return n->enfants[enfant];
-
-	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
-		int i = 0;
-		int Bmax = n->enfants[i]->B;
-		Noeud * fils = n->enfants[i];
-
-		for(i = 1; i < k; i++){
-			if(n->enfants[i]->B > Bmax){
-				Bmax = n->enfants[i]->B;
-				fils =  n->enfants[i];
-			}
-		}
-		if(fils->nb_enfants==0){ //le fils est une feuille
-			return fils;
-		} // le fils n'est pas une feuille on recursive sur l'étage d'en dessous
-		return selectionner(fils);
-	}
-
-}
-
-/**
- * developpe les noeuds d'une feuille en instanciant ses fils
- * et retourne un noeud fils random pour le simuler jusqu'en fin de partie
- */
-Noeud* developer(Noeud * n){ 
-	int k = 0;
-	Coup** coups = coups_possibles(n, &k);
-	for(int i = 0; i < k ; i ++){
-		n->enfants[i] = jouerCoup(n->etat, coups[i]);
-	}
-	srand(time(NULL)); 
-	int i = rand()%k;
-	return n->enfants[i];
-}
-
-int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
-	Etat * e = copieEtat(n->etat);
-	int fini = 0;
-	int k = 0;
-	int profondeur = 0 ;
-
-	while(!fini){
-		Coup ** coups = coups_possibles(e, &k);
-		if(k==0){ //plus de coups possible
-			fini = 1;
-			continue;
-		}
-		srand(time(NULL)); 
-		int i = rand()%k;
-
-		jouerCoup(e , coups[i]);
-		//afficheJeu(e);
-
-		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
-		//printf("Coup numéro : %d\n", ++profondeur);
-
-		freeCoups(coups);
-	}
-	free (e);
-
-	mise_a_jour(n, fini);
-}
-
-void mise_a_jour(Noeud* n, int res){
-	if(n==NULL) return; //parent de la racine on arrete (il faut mettre a jour la racine)
-	n->nb_simus = n->nb_simus +1;
-	if(res == 1 ){
-		n->nb_victoires = n->nb_victoires +1;
-	}
-	B(n); //met a jour la B valeur du noeud
-	mise_a_jour(n->parent, res);
-}	
-
-
-/**
- * calcule la B valeur du noeud n et le met à jour dans la structure
-*/
-  
-void B(Noeud* n){
-	//exploitation
-	float exploit 	= (n->nb_victoires)/(n->nb_simus);
-
-	//exploration
-	Noeud* parent 	= n->parent;
-	float ratio  	= log(parent->nb_simus) / (n->nb_simus);
-	float explo 	= C*(sqrt(ratio)); 
-
-	if(n->profondeur%2 == 1){// ligne MIN
-		n->B 		= -(exploit + explo);
-	} else {			// ligne MAX
-		n->B		= exploit + explo;
-	}
-	 
-}
-
 
 
 int main(void) {
 
-	Coup * coup;
 	FinDePartie fin;
 
 	// initialisation
@@ -561,7 +576,7 @@ int main(void) {
 	Etat * etat = etat_initial();
 	n->etat = etat;
 
-	simuler(n);
+	ordijoue_mcts(n->etat, 3); //3s de temps max
 	free( etat );
 	free( n );
 

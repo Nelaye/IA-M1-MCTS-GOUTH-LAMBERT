@@ -435,7 +435,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 }
 
 /**
- *  retourne le noeud à partir duquel developper 
+ *  retourne le noeud à partir duquel developper => toujours une feuille
 */
 Noeud* selectionner(Noeud * n){
 
@@ -475,11 +475,58 @@ Noeud* selectionner(Noeud * n){
 }
 
 /**
- * 
+ * developpe les noeuds d'une feuille en instanciant ses fils
+ * et retourne un noeud fils random pour le simuler jusqu'en fin de partie
  */
-Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
-
+Noeud* developer(Noeud * n){ 
+	int k = 0;
+	Coup** coups = coups_possibles(n, &k);
+	for(int i = 0; i < k ; i ++){
+		n->enfants[i] = jouerCoup(n->etat, coups[i]);
+	}
+	srand(time(NULL)); 
+	int i = rand()%k;
+	return n->enfants[i];
 }
+
+int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
+	Etat * e = copieEtat(n->etat);
+	int fini = 0;
+	int k = 0;
+	int profondeur = 0 ;
+
+	while(!fini){
+		Coup ** coups = coups_possibles(e, &k);
+		if(k==0){ //plus de coups possible
+			fini = 1;
+			continue;
+		}
+		srand(time(NULL)); 
+		int i = rand()%k;
+
+		jouerCoup(e , coups[i]);
+		//afficheJeu(e);
+
+		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		//printf("Coup numéro : %d\n", ++profondeur);
+
+		freeCoups(coups);
+	}
+	free (e);
+
+	mise_a_jour(n, fini);
+}
+
+void mise_a_jour(Noeud* n, int res){
+	if(n==NULL) return; //parent de la racine on arrete (il faut mettre a jour la racine)
+	n->nb_simus = n->nb_simus +1;
+	if(res == 1 ){
+		n->nb_victoires = n->nb_victoires +1;
+	}
+	B(n); //met a jour la B valeur du noeud
+	mise_a_jour(n->parent, res);
+}	
+
 
 /**
  * calcule la B valeur du noeud n et le met à jour dans la structure
@@ -500,37 +547,6 @@ void B(Noeud* n){
 		n->B		= exploit + explo;
 	}
 	 
-
-}
-int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
-	
-	
-	Etat * e = copieEtat(n->etat);
-	int fini = 0;
-	int k = 0;
-	int profondeur = 0 ;
-
-	while(!fini ){
-		Coup ** coups = coups_possibles(e, &k);
-		if(k==0){ //plus de coups possible
-			fini = 1;
-			continue;
-		}
-		srand(time(NULL)); 
-		int i = rand()%k;
-
-		jouerCoup(e , coups[i]);
-		//afficheJeu(e);
-
-		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
-		//printf("Coup numéro : %d\n", ++profondeur);
-
-		freeCoups(coups);
-	}
-	printf(" résultat : %d\n",fini);
-	free ( e );
-
-	// mettre à jour les valeurs
 }
 
 

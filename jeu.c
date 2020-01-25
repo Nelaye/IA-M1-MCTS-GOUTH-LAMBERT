@@ -430,52 +430,45 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	// Penser à libérer la mémoire :
 	freeNoeud(racine);
-    freeCoups(coups);
+	freeCoups(coups);
 	free (coups);
 }
 
 /**
  *  retourne le noeud à partir duquel developper 
 */
-Noeud selectionner(Noeud * n){
+Noeud* selectionner(Noeud * n){
 
+	Coup ** coups;
 	int k = 0;
-	int nb_coups_possible=0;
-	
-    Coup ** coups = coups_possibles(n->etat, &k);
+	coups = coups_possibles(n->etat, &k);
 
-	while(coups[nb_coups_possible] != NULL){
-		nb_coups_possible++;
+	int not_simu = 0;
+	int enfant = 0;
+	for(int i = 0 ; i < k; i++){
+		if(n->enfants[i]->nb_simus==0){
+			not_simu = 1; //il y a un fils qui n'a pas été simulé on le retourne
+			enfant = i;
+		}
 	}
 
-	//check si il existe un fils non simulé
-	int is_not_simu = 0;
-    int enfant = 0;
-    for(int i = 0; i < n->nb_enfants; i++){
-        if(n->enfants[i]->nb_simus == 0){ //si l'enfant i n'a pas été simulé
-            is_not_simu = 1;
-            enfant = i;
-        }
-    }
-    
-	if(is_not_simu){ //  au moins un fils n'est pas simulé donc pas de B valeur pour lui
-        freeCoups(coups);
-        return n->enfant[i];
+	if(not_simu){ //  un des fils n'a jamais été simulé
+		return n->enfants[enfant];
 
-	}else{ // tous les fils on été simulé => on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
+	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
 		int i = 0;
 		int Bmax = n->enfants[i]->B;
 		Noeud * fils = n->enfants[i];
 
-		for(i=1; i<nb_coups_possible;i++){
-
+		for(i = 1; i < k; i++){
 			if(n->enfants[i]->B > Bmax){
 				Bmax = n->enfants[i]->B;
 				fils =  n->enfants[i];
 			}
 		}
-		
-		freeCoups(coups);
+		if(fils->nb_enfants==0){ //le fils est une feuille
+			return fils;
+		} // le fils n'est pas une feuille on recursive sur l'étage d'en dessous
 		return selectionner(fils);
 	}
 
@@ -483,9 +476,9 @@ Noeud selectionner(Noeud * n){
 
 /**
  * 
-*/ 
-Noeud developer(Noeud * n){
-    
+ */
+Noeud developer(Noeud * n){ //retourne le noeud à partir duquel simuler
+
 }
 
 /**
@@ -531,8 +524,8 @@ int simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
 		//printf("Coup numéro : %d\n", ++profondeur);
-        
-        freeCoups(coups);
+
+		freeCoups(coups);
 	}
 	printf(" résultat : %d\n",fini);
 	free ( e );
@@ -550,9 +543,9 @@ int main(void) {
 	// initialisation
 	Noeud * n = nouveauNoeud(NULL,NULL);
 	Etat * etat = etat_initial();
-    n->etat = etat;
-	
-    simuler(n);
+	n->etat = etat;
+
+	simuler(n);
 	free( etat );
 	free( n );
 

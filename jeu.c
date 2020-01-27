@@ -19,7 +19,7 @@
 #define LIGNE 6
 #define COLONNE 7
 
-#define C 1	//compromis entre exploitation et exploration dans le calcule de la B valeur
+#define C 23	//compromis entre exploitation et exploration dans le calcule de la B valeur
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -356,29 +356,35 @@ FinDePartie testFin( Etat * etat ) {
  *  retourne le noeud à partir duquel developper => toujours une feuille
 */
 Noeud* selectionner(Noeud * n){
-	if (n->nb_enfants == 0){
+
+
+	//idée de reflection peut etre prendre le compte si noeud feuille ?
+
+	//CAS 1 : lui même n'a pas été simulé on le choisi
+	if (n->nb_enfants == 0 && !testFin(n->etat)){
 		
-		printf("\n____selection____\n");
+		printf("\n____selection 1____\n");
 		afficheJeu(n->etat);
 		return n;
 	}
 
+	//CAS 2 : recherche du premier fils non simulé
 	int k = 0;
 	int not_simu = 0;
 	int enfant = 0;
-	for(int i = 0 ; i < k; i++){
+	for(int i = 0 ; i < k; i++){ //peut être mettre un while à la place while(notsimu && i<k)
 		if(n->enfants[i]->nb_simus==0){
-			not_simu = 1; //il y a un fils qui n'a pas été simulé on le retourne
+			not_simu = 1; 
 			enfant = i;
 		}
 	}
 
-	if(not_simu){ //  un des fils n'a jamais été simulé
-		printf("\n____selection____\n");
+	if(not_simu){ // un des fils n'a jamais été simulé
+		printf("\n____selection 2____\n");
 		afficheJeu(n->etat);
 		return n->enfants[enfant];
 
-	}else{ // on va pouvoir descendre d'un étage par le fils ayant le plus grand Bvaleur
+	}else{ // CAS 3 : tous les fils ont été simulé, on va pouvoir descendre d'un étage par le fils ayant la plus grande B_valeur
 		int i = 0;
 		int Bmax = n->enfants[i]->B;
 		Noeud * fils = n->enfants[i];
@@ -389,33 +395,44 @@ Noeud* selectionner(Noeud * n){
 				fils =  n->enfants[i];
 			}
 		}
-		return selectionner(fils);
+		return selectionner(fils);//récursion 
 	}
 
 }
 
 /**
- * developpe les noeuds d'une feuille en instanciant ses fils
- * et retourne un noeud fils random pour le simuler jusqu'en fin de partie
+ * Développe les noeuds d'une feuille en instanciant ses fils
+ * et retourne un noeud fils random pour le simuler jusqu'a une fin de partie
  */
 Noeud* developper(Noeud * n){
-	if(testFin(n->etat)!=0){ //c'est une feuille on developpe pas
+
+	printf("\n ___developper___ \n");
+	//c'est une feuille on developpe pas
+	if(testFin(n->etat)!=NON){  // ATTENTION : il faut peut être gérer le cas != NON justement, si victoire alors le renvoyer et terminer
 		printf("HERE");
 		return n;
 	} 
-	int k = 0;
-	Coup** coups = coups_possibles(n->etat, &k);
-	for(int i = 0; i < k ; i ++){
-		if(jouerCoup(n->etat, coups[i])){ //si le coup est jouable
-			Noeud* enfant = ajouterEnfant(n, coups[i]);
+
+	int k = 0; // nombre de coups possible
+	Etat * e = copieEtat(n->etat);
+	Coup** coups = coups_possibles(e, &k);
+
+	for(int i = 0; i < k ; i ++){//parcours de ces coups jouable
+		if(jouerCoup(e, coups[i])){ //si le coup est jouable
+			Noeud* enfant = ajouterEnfant(n, coups[i]); // on récupère mais pourquoi ?
 		}
+		Etat * e = copieEtat(n->etat);
 	}
-	if(k==0){ //si on arrive a une feuille dont l'état est final
+
+	//si on arrive a une feuille dont l'état est final 
+	if(k==0){ //normalement impossible ...
 		return n;
 	}
+
 	srand(time(NULL)); 
-	int i = rand()%k;
-	return n->enfants[i];
+	int r = rand()%k;
+	//printf("R = %d\n",r);
+	return n->enfants[r];
 }
 
 /**
@@ -445,32 +462,32 @@ void B(Noeud* n){
 }
 
 void mise_a_jour(Noeud* n, int res){
-	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
-		n->nb_simus = n->nb_simus +1;
-		if(res == 1 ){
-			n->nb_victoires = n->nb_victoires +1;
-		}
-		return;
-	} 
 
 	n->nb_simus = n->nb_simus +1;
 	if(res == 1 ){
 		n->nb_victoires = n->nb_victoires +1;
 	}
-	B(n); //met a jour la B valeur du noeud
-	mise_a_jour(n->parent, res);
+
+	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
+		return;
+	}else{
+		B(n); //met a jour la B valeur du noeud
+		mise_a_jour(n->parent, res);
+	}
 }	
 
 
 void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
+
+
 	Etat * e = copieEtat(n->etat);
-	int fini = 0;
+	int fini = testFin(e);
 	int k = 0;
 
 	while(!fini){
 		Coup ** coups = coups_possibles(e, &k);
 		if(k==0){ //plus de coups possible
-			fini = 1;
+			fini = 1; // ?????? 1 egal egalité dans l'enum 
 			continue;
 		}
 		srand(time(NULL)); 
@@ -480,6 +497,7 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 		//afficheJeu(e);
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		//printf("%d\n",fini);
 		//printf("Coup numéro : %d\n", ++profondeur);
 
 		freeCoups(coups);
@@ -572,13 +590,15 @@ int main(void) {
 	FinDePartie fin;
 
 	// initialisation
+
 	Noeud * n = nouveauNoeud(NULL,NULL);
 	Etat * etat = etat_initial();
 	n->etat = etat;
 
-	ordijoue_mcts(n->etat, 3); //3s de temps max
+	ordijoue_mcts(n->etat, 1); //3s de temps max
 	free( etat );
 	free( n );
+
 
 /*
 	// Choisir qui commence :

@@ -426,6 +426,7 @@ Noeud* developper(Noeud * n){
 
 	//si on arrive a une feuille dont l'état est final 
 	if(k==0){ //normalement impossible ...
+		printf("WTF\n");
 		return n;
 	}
 

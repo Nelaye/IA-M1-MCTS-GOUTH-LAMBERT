@@ -86,6 +86,97 @@ Etat * etat_initial() {
 	return etat;
 }
 
+// Etat gagne ligne 
+Etat * etat_ligne() {
+
+	Etat * etat = (Etat *)malloc(sizeof(Etat));
+
+
+	int i,j;
+	for (i=0; i< LIGNE; i++){
+		for ( j=0; j<COLONNE; j++){
+			etat->plateau[i][j] = ' ';
+		}
+	}
+
+	etat->plateau[0][0] = 'X';
+	etat->plateau[1][0] = 'X';
+	etat->plateau[2][0] = 'X';
+	etat->plateau[3][0] = 'X';
+    
+    etat->joueur = 0;
+	return etat;
+}
+
+
+// Etat gagne diag haut 
+Etat * etat_diag_haut() {
+
+	Etat * etat = (Etat *)malloc(sizeof(Etat));
+
+
+	int i,j;
+	for (i=0; i< LIGNE; i++){
+		for ( j=0; j<COLONNE; j++){
+			etat->plateau[i][j] = ' ';
+		}
+	}
+
+	etat->plateau[0][0] = 'X';
+	etat->plateau[1][1] = 'X';
+	etat->plateau[2][2] = 'X';
+	etat->plateau[3][3] = 'X';
+    
+    etat->joueur = 0;
+	return etat;
+}
+
+// Etat gagne diag bas 
+Etat * etat_diag_bas() {
+
+	Etat * etat = (Etat *)malloc(sizeof(Etat));
+
+
+	int i,j;
+	for (i=0; i< LIGNE; i++){
+		for ( j=0; j<COLONNE; j++){
+			etat->plateau[i][j] = ' ';
+		}
+	}
+
+	etat->plateau[0][3] = 'X';
+	etat->plateau[1][2] = 'X';
+	etat->plateau[2][1] = 'X';
+	etat->plateau[3][0] = 'X';
+    
+    etat->joueur = 0;
+	return etat;
+}
+
+
+// Etat gagne haut 
+Etat * etat_haut() {
+
+	Etat * etat = (Etat *)malloc(sizeof(Etat));
+
+
+	int i,j;
+	for (i=0; i< LIGNE; i++){
+		for ( j=0; j<COLONNE; j++){
+			etat->plateau[i][j] = ' ';
+		}
+	}
+
+	etat->plateau[0][3] = 'X';
+	etat->plateau[0][2] = 'X';
+	etat->plateau[0][1] = 'X';
+	etat->plateau[0][0] = 'X';
+    
+    etat->joueur = 0;
+	return etat;
+}
+
+
 
 void afficheJeu(Etat * etat) {
 
@@ -380,17 +471,17 @@ FinDePartie testFin( Etat * etat ) {
 					k++;
 				}
 				if ( k == 4 ){
-					//printf("DIAG 1");
+					//printf("DIAG HAUT");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 
 				k=0;
-				while ( k < 4 && i+k < COLONNE && j-k >= LIGNE && etat->plateau[i+k][j-k] == etat->plateau[i][j] ){
+				while ( k < 4 && i+k < COLONNE && j-k >= 0 && etat->plateau[i+k][j-k] == etat->plateau[i][j] ){
 					//printf("while diag 2\n");
 					k++;
 				}
 				if ( k == 4 ){
-					//printf("DIAG 2");
+					//printf("DIAG BAS");
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
 				}
 			}
@@ -533,7 +624,7 @@ void B(Noeud* n){
 	float explo 	= C*(sqrt(ratio));
 
 	//printf("\t%f + %f = %f\n",exploit, explo, (exploit + explo));
-	if(n->profondeur%2 == 1){// ligne MIN
+	if(n->profondeur%2 != 1){// ligne MIN
 		n->B 		= (-exploit) + explo;
 	} else {			// ligne MAX
 		n->B		= exploit + explo;
@@ -547,6 +638,10 @@ void mise_a_jour(Noeud* n, int res){
 	if(res == ORDI_GAGNE ){
 		n->nb_victoires = n->nb_victoires +5;
 	}
+	if(res == HUMAIN_GAGNE ){
+		n->nb_victoires = n->nb_victoires -5;
+	}
+
 
 	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
 		return;
@@ -674,12 +769,51 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	fflush(0);
 }
 
+void sep(){
+	printf("\n==================================\n");
+}
 
+void procedure_test_etat(){
+
+	Etat * haut = etat_haut();
+	afficheJeu(haut);
+	FinDePartie fin = testFin(haut);
+
+	printf("%d", fin);
+
+	sep();
+
+	Etat * ligne = etat_ligne();
+	afficheJeu(ligne);
+	fin = testFin(ligne);
+
+	printf("%d", fin);
+
+	sep();
+
+	Etat * d1 = etat_diag_haut();
+	afficheJeu(d1);
+	fin = testFin(d1);
+
+	printf("%d", fin);
+
+	sep();
+
+	Etat * d2 = etat_diag_bas();
+	afficheJeu(d2);
+	fin = testFin(d2);
+
+	printf("%d", fin);
+
+	sep();
+
+}
 
 int main(void) {
 	srand(time(NULL));
 	FinDePartie fin;
 
+	//procedure_test_etat();
 	// initialisation
 
 	Etat * etat = etat_initial();
@@ -700,6 +834,8 @@ int main(void) {
 	scanf("%d", &(etat->joueur) );
 	*/
 
+
+
 	Coup * coup;
 	while ( fin == NON ) { // boucle de jeu
 
@@ -707,7 +843,7 @@ int main(void) {
 		afficheJeu(etat);
 		printf("joueur : %d\n",etat->joueur );
 
-		if ( etat->joueur != 0 ) {// tour de l'humain
+		if ( etat->joueur == 0 ) {// tour de l'humain
 			do{
 				printf("ici\n");
 				fflush(0);

@@ -24,7 +24,9 @@
 #define TRUE 1
 #define FALSE 0
 
-#define C 100	//compromis entre exploitation et exploration dans le calcule de la B valeur
+#define SEC 2	//temps que mets l'algo a trouver le meilleur coup
+
+#define C 2	//compromis entre exploitation et exploration dans le calcule de la B valeur
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -109,6 +111,8 @@ void afficheJeu(Etat * etat) {
 // TODO: adapter la liste de paramètres au jeu
 Coup * nouveauCoup( int i, int j ) {
 
+	//printf("Dans le nouveauCoup\n");
+	fflush(0);
 	Coup * coup = (Coup *)malloc(sizeof(Coup));
 
 	// TODO: à compléter avec la création d'un nouveau coup
@@ -129,9 +133,9 @@ Coup * demanderCoup () {
 	/* par exemple : */
 	int i,j;
 	printf(" quelle colonne ? ") ;
+	fflush(0);
 	scanf("%d",&j);
 	i=0;
-
 
 	return nouveauCoup(i,j);
 }
@@ -248,9 +252,12 @@ void afficher_noeud(Noeud * n){
 // utiliser nouveauNoeud(NULL, NULL) pour créer la racine
 Noeud * nouveauNoeud (Noeud * parent, Coup * coup ) {
 
+	
+
 	Noeud * noeud = (Noeud *)malloc(sizeof(Noeud));
 
 	if ( parent != NULL && coup != NULL ) {
+		//printf("parent->B : %f, coup.colonne: %d\n",parent->B,coup->colonne);
 		noeud->etat = copieEtat ( parent->etat );
 		jouerCoup ( noeud->etat, coup );
 		noeud->coup = coup;
@@ -265,6 +272,11 @@ Noeud * nouveauNoeud (Noeud * parent, Coup * coup ) {
 	}
 	noeud->parent = parent;
 	noeud->nb_enfants = 0;
+	//noeud->enfants = (Noeud **) malloc((1+LARGEUR_MAX) * sizeof(Noeud * ) );
+	/*for(int i=0; i<LARGEUR_MAX; i++){
+		noeud->enfants[i] = (Noeud *) malloc((1+LARGEUR_MAX) * sizeof(Noeud ));
+	}*/
+	noeud->enfants[LARGEUR_MAX] = NULL;
 
 	// POUR MCTS:
 	noeud->nb_victoires = 0;
@@ -286,10 +298,10 @@ void freeNoeud ( Noeud * noeud) {
 	if ( noeud->etat != NULL)
 		free (noeud->etat);
 
-	do {
+	while ( noeud->nb_enfants > 0 ) {
 		freeNoeud(noeud->enfants[noeud->nb_enfants-1]);
 		noeud->nb_enfants --;
-	}while ( noeud->nb_enfants > 0 );
+	}
 	if ( noeud->coup != NULL)
 		free(noeud->coup);
 
@@ -404,7 +416,7 @@ Noeud* selectionner(Noeud * n){
 	//idée de reflection peut etre prendre le compte si noeud feuille ?
 
 	//CAS 1 : lui même n'a pas été simulé on le choisi
-	if (n->nb_enfants == 0 && testFin(n->etat)==NON){
+	if (n->nb_enfants == 0){
 
 		//printf("\nCas : Aucun enfant mais pas feuille finale\n");
 		//afficher_noeud(n);
@@ -494,7 +506,7 @@ Noeud* developper(Noeud * n){
 		printf("WTF\n");
 		return n;
 	}
-*/
+		*/
 	int r = rand()%k;
 	//printf("R = %d\n",r);
     free(e);
@@ -522,7 +534,7 @@ void B(Noeud* n){
 
 	//printf("\t%f + %f = %f\n",exploit, explo, (exploit + explo));
 	if(n->profondeur%2 == 1){// ligne MIN
-		n->B 		= -(exploit + explo);
+		n->B 		= (-exploit) + explo;
 	} else {			// ligne MAX
 		n->B		= exploit + explo;
 	}
@@ -533,7 +545,7 @@ void mise_a_jour(Noeud* n, int res){
 
 	n->nb_simus = n->nb_simus +1;
 	if(res == ORDI_GAGNE ){
-		n->nb_victoires = n->nb_victoires +1;
+		n->nb_victoires = n->nb_victoires +5;
 	}
 
 	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
@@ -552,7 +564,7 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 	int fini = testFin(e);
 	int k = 0;
 	int profondeur = 0;
-	
+	//printf("\nsimulation\n");
 	while(!fini){
 		Coup ** coups = coups_possibles(e, &k);
 		/*if(k==0){ //plus de coups possible
@@ -567,6 +579,7 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 		//afficheJeu(e);
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		//printf("%d",fini);
 		//printf("Fini %d\n",fini);
 		//printf("Coup numéro : %d\n", ++profondeur);
 
@@ -595,7 +608,6 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	Noeud * racine = nouveauNoeud(NULL, NULL);
 	racine->etat = copieEtat(etat);
 
-
 	// créer les premiers noeuds:
 	int k = 0;//nb enfant
 	coups = coups_possibles(racine->etat, &k);
@@ -608,24 +620,27 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	while ( coups[i] != NULL) {
 		//printf("ligne: %d, colonne: %d\n",coups[i]->ligne,coups[i]->colonne);
 		enfant = ajouterEnfant(racine, coups[i]);
-		simuler(enfant);
+		//simuler(enfant);
 		i++;
 	}
 
 	int iter = 0;
 
 	do {
-
+		//printf("\n%d\n",iter);
 		//Sélectionner
-		//printf("**SELECTION**\n");
+		/*printf("**SELECTION**\n");
+		fflush(0);*/
 		Noeud * n = selectionner(racine);
 
 		//Developper (selection du chemin/fils a prendre)
-		//printf("**DEVELOPPEMENT**\n");
+		/*printf("**DEVELOPPEMENT**\n");
+		fflush(0);*/
 		Noeud * s = developper(n);
 
 		//simuler ce chemin
-		//printf("**SIMULATION**\n");
+		/*printf("**SIMULATION**\n");
+		fflush(0);*/
 		simuler(s); //simule et met a jour les B valeurs
 		
 		toc = clock();
@@ -648,11 +663,15 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	printf ("ordi joue le coup numero %d à la ligne %d et colonne %d\n", enf, coups[enf]->ligne, coups[enf]->colonne);
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
-	//printf("coup joué\n");
+	
+	printf("coup joué\n");
 
 	// Penser à libérer la mémoire :
-	freeCoups(coups);
+	//freeCoups(coups);
+	printf("free coups\n");
 	//freeNoeud(racine); // A CORRIGER TODO TODO
+	printf("free neoud\n");
+	fflush(0);
 }
 
 
@@ -663,10 +682,7 @@ int main(void) {
 
 	// initialisation
 
-	Noeud * n = nouveauNoeud(NULL,NULL);
 	Etat * etat = etat_initial();
-	n->etat = etat;
-	n->etat->joueur = 0;
 
 	/*Noeud * children = developper(selectionner(n));
 	printf("j'ai choisi :\n");
@@ -688,21 +704,23 @@ int main(void) {
 	while ( fin == NON ) { // boucle de jeu
 
 		printf("\n");
-		afficheJeu(n->etat);
+		afficheJeu(etat);
+		printf("joueur : %d\n",etat->joueur );
 
-
-		if ( n->etat->joueur != 0 ) {// tour de l'humain
+		if ( etat->joueur != 0 ) {// tour de l'humain
 			do{
+				printf("ici\n");
+				fflush(0);
 				coup = demanderCoup();
-			}while( !jouerCoup(n->etat, coup) );
-
+				printf("là\n");
+				fflush(0);
+			}while( !jouerCoup(etat, coup) );
 		}
 		else {// tour de l'Ordinateur
-			ordijoue_mcts(n->etat, 1);
+			ordijoue_mcts(etat, SEC);
 		}
-
-		fin = testFin( n->etat );
-
+		fin = testFin( etat );
+		//free(coup);
 	}
 
 	printf("\n");

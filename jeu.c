@@ -11,6 +11,7 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h> //for memset
+#include <limits.h>
 
 // Paramètres du jeu
 #define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
@@ -399,14 +400,14 @@ FinDePartie testFin( Etat * etat ) {
 Noeud* selectionner(Noeud * n){
 
 
-    printf("\n\tProfondeur actuelle : %d\n", n->profondeur);
+    //printf("\n\tProfondeur actuelle : %d\n", n->profondeur);
 	//idée de reflection peut etre prendre le compte si noeud feuille ?
 
 	//CAS 1 : lui même n'a pas été simulé on le choisi
 	if (n->nb_enfants == 0 && testFin(n->etat)==NON){
 
-		printf("\nCas : Aucun enfant mais pas feuille finale\n");
-		afficher_noeud(n);
+		//printf("\nCas : Aucun enfant mais pas feuille finale\n");
+		//afficher_noeud(n);
 		return n;
 	}
 
@@ -429,20 +430,20 @@ Noeud* selectionner(Noeud * n){
 	}
 	
 	if(oneNotSimu){ // un des fils n'a jamais été simulé
-		printf("\nCas : un fils n'a jamais été simulé\n");
+		//printf("\nCas : un fils n'a jamais été simulé\n");
         //selectionne un fils non developpé aléatoirement
         int r = 0;
         do{
             r = rand()%n->nb_enfants;
             indiceEnfant = r;
-            printf("le random %d :isNotSimu[]= %d\n", r, isNotSimu[r]);
+            //printf("le random %d :isNotSimu[]= %d\n", r, isNotSimu[r]);
         }while(isNotSimu[r]==0);
 
-		afficher_noeud(n->enfants[indiceEnfant]);
+		//afficher_noeud(n->enfants[indiceEnfant]);
 		return n->enfants[indiceEnfant];
 
 	}else{ // CAS 3 : tous les fils ont été simulé, on va pouvoir descendre d'un étage par le fils ayant la plus grande B_valeur
-		printf("\nCas : tous les fils simulés\n");
+		//printf("\nCas : tous les fils simulés\n");
         int i = 0;
 		int Bmax = n->enfants[i]->B;
 		Noeud * fils = n->enfants[i];
@@ -455,7 +456,7 @@ Noeud* selectionner(Noeud * n){
 				fils =  n->enfants[i];
 			}
 		} 
-		printf("\nRECURSION SELECTION\n");
+		//printf("\nRECURSION SELECTION\n");
 		return selectionner(fils);//récursion
 	}
 
@@ -486,7 +487,7 @@ Noeud* developper(Noeud * n){
 		Etat * e = copieEtat(n->etat);
 	}
 
-	printf("\nnombre de coup k = %d\n",k);
+	//printf("\nnombre de coup k = %d\n",k);
 	//si on arrive a une feuille dont l'état est final
 	/*
 	if(k==0){ //normalement impossible ...
@@ -616,22 +617,17 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	do {
 
 		//Sélectionner
-		printf("**SELECTION**\n");
+		//printf("**SELECTION**\n");
 		Noeud * n = selectionner(racine);
 
-		
-		if(testFin(n->etat)==NON){
-			//Developper (selection du chemin/fils a prendre)
-			printf("**DEVELOPPEMENT**\n");
-			fflush(0);
-			Noeud * s = developper(n);
+		//Developper (selection du chemin/fils a prendre)
+		//printf("**DEVELOPPEMENT**\n");
+		Noeud * s = developper(n);
 
-			//simuler ce chemin
-			printf("**SIMULATION**\n");
-			simuler(s); //simule et met a jour les B valeurs
-		}
+		//simuler ce chemin
+		//printf("**SIMULATION**\n");
+		simuler(s); //simule et met a jour les B valeurs
 		
-
 		toc = clock();
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
 		iter ++;
@@ -649,10 +645,10 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	meilleur_coup = coups[enf];
 
-	printf ("je joue le meilleur coup numero %d à la ligne %d et colonne %d\n", enf, coups[enf]->ligne, coups[enf]->colonne);
+	printf ("ordi joue le coup numero %d à la ligne %d et colonne %d\n", enf, coups[enf]->ligne, coups[enf]->colonne);
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
-	printf("coup joué\n");
+	//printf("coup joué\n");
 
 	// Penser à libérer la mémoire :
 	freeCoups(coups);
@@ -670,42 +666,42 @@ int main(void) {
 	Noeud * n = nouveauNoeud(NULL,NULL);
 	Etat * etat = etat_initial();
 	n->etat = etat;
+	n->etat->joueur = 0;
 
 	/*Noeud * children = developper(selectionner(n));
 	printf("j'ai choisi :\n");
 	afficher_noeud(children);
 	
 	simuler(children);*/
-	ordijoue_mcts(n->etat, 1); //3s de temps max
+	/*ordijoue_mcts(n->etat, 1); //3s de temps max
 	free( etat );
 	free( n );
+*/
 
 
-/*
 	// Choisir qui commence :
-	printf("Qui commence (0 : humain, 1 : ordinateur) ? ");
+	/*printf("Qui commence (0 : humain, 1 : ordinateur) ? ");
 	scanf("%d", &(etat->joueur) );
+	*/
 
+	Coup * coup;
 	while ( fin == NON ) { // boucle de jeu
 
 		printf("\n");
-		afficheJeu(etat);
+		afficheJeu(n->etat);
 
 
-		if ( etat->joueur == 0 ) {// tour de l'humain
+		if ( n->etat->joueur != 0 ) {// tour de l'humain
 			do{
 				coup = demanderCoup();
-			}while( !jouerCoup(etat, coup) );
+			}while( !jouerCoup(n->etat, coup) );
 
 		}
 		else {// tour de l'Ordinateur
-			do{
-				coup = demanderCoup();
-			}while( !jouerCoup(etat, coup) );
-			//ordijoue_mcts( etat, TEMPS );
+			ordijoue_mcts(n->etat, 1);
 		}
 
-		fin = testFin( etat );
+		fin = testFin( n->etat );
 
 	}
 
@@ -718,7 +714,7 @@ int main(void) {
 		printf(" Match nul !  \n");
 	else
 		printf( "** BRAVO, l'ordinateur a perdu  **\n");
-*/
+
 
 	return 0;
 }

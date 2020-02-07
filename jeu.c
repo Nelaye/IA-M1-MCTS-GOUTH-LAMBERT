@@ -13,47 +13,8 @@
 #include <string.h> //for memset
 #include <limits.h>
 
-// Paramètres du jeu
-#define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
+#include "jeuH.h"
 
-#define TEMPS 5		// temps de calcul pour un coup avec MCTS (en secondes)
-
-#define LIGNE 6
-#define COLONNE 7
-
-#define TRUE 1
-#define FALSE 0
-
-#define SEC 2	//temps que mets l'algo a trouver le meilleur coup
-
-#define C 2	//compromis entre exploitation et exploration dans le calcule de la B valeur
-
-// macros
-#define AUTRE_JOUEUR(i) (1-(i))
-#define min(a, b)       ((a) < (b) ? (a) : (b))
-#define max(a, b)       ((a) < (b) ? (b) : (a))
-
-// Critères de fin de partie
-typedef enum {NON, MATCHNUL, ORDI_GAGNE, HUMAIN_GAGNE } FinDePartie;
-
-// Definition du type Etat (état/position du jeu)
-typedef struct EtatSt {
-
-	int joueur; // à qui de jouer ?
-
-	char plateau[LIGNE][COLONNE];
-
-} Etat;
-
-// Definition du type Coup
-typedef struct {
-
-	int ligne;
-	int colonne;
-
-} Coup;
-
-// Copier un état
 Etat * copieEtat( Etat * src ) {
 
 	Etat * etat = (Etat *)malloc(sizeof(Etat));
@@ -69,7 +30,6 @@ Etat * copieEtat( Etat * src ) {
 	return etat;
 }
 
-// Etat initial
 Etat * etat_initial() {
 
 	Etat * etat = (Etat *)malloc(sizeof(Etat));
@@ -85,7 +45,7 @@ Etat * etat_initial() {
     etat->joueur = 0;
 	return etat;
 }
-
+/*
 // Etat gagne ligne 
 Etat * etat_ligne() {
 
@@ -107,7 +67,6 @@ Etat * etat_ligne() {
     etat->joueur = 0;
 	return etat;
 }
-
 
 // Etat gagne diag haut 
 Etat * etat_diag_haut() {
@@ -153,7 +112,6 @@ Etat * etat_diag_bas() {
 	return etat;
 }
 
-
 // Etat gagne haut 
 Etat * etat_haut() {
 
@@ -175,9 +133,7 @@ Etat * etat_haut() {
     etat->joueur = 0;
 	return etat;
 }
-
-
-
+*/
 void afficheJeu(Etat * etat) {
 
 	// TODO: à compléter
@@ -198,8 +154,6 @@ void afficheJeu(Etat * etat) {
 
 }
 
-// Nouveau coup
-// TODO: adapter la liste de paramètres au jeu
 Coup * nouveauCoup( int i, int j ) {
 
 	//printf("Dans le nouveauCoup\n");
@@ -216,7 +170,6 @@ Coup * nouveauCoup( int i, int j ) {
 	return coup;
 }
 
-// Demander à l'humain quel coup jouer
 Coup * demanderCoup () {
 
 	// TODO...
@@ -231,8 +184,6 @@ Coup * demanderCoup () {
 	return nouveauCoup(i,j);
 }
 
-// Modifier l'état en jouant un coup
-// retourne 0 si le coup n'est pas possible
 int jouerCoup( Etat * etat, Coup * coup ) {
 
 	// TODO: à compléter
@@ -258,8 +209,6 @@ int jouerCoup( Etat * etat, Coup * coup ) {
 
 }
 
-// Retourne une liste de coups possibles à partir d'un etat
-// (tableau de pointeurs de coups se terminant par NULL)
 Coup ** coups_possibles( Etat * etat , int *k) {
 
 	Coup ** coups = (Coup **) malloc((1+LARGEUR_MAX) * sizeof(Coup *) );
@@ -290,30 +239,6 @@ Coup ** coups_possibles( Etat * etat , int *k) {
 	return coups;
 }
 
-
-// Definition du type Noeud
-typedef struct NoeudSt {
-
-	int joueur; // joueur qui a joué pour arriver ici
-	Coup * coup;   // coup joué par ce joueur pour arriver ici
-
-	Etat * etat; // etat du jeu
-
-	struct NoeudSt * parent;
-	struct NoeudSt * enfants[LARGEUR_MAX]; // liste d'enfants : chaque enfant correspond à un coup possible
-	int nb_enfants;	// nb d'enfants présents dans la liste
-
-	// POUR MCTS:
-	int nb_victoires;
-	int nb_simus;
-	double B;
-	int profondeur;
-
-} Noeud;
-
-/*
- * affiche un noeud sur la sortie standard
- */
 void afficher_noeud(Noeud * n){
 
 	printf("\n=== AFFICHAGE D'UN NOEUD ===\n");
@@ -334,13 +259,10 @@ void afficher_noeud(Noeud * n){
 
     printf("==nombre_enfant== :\t%d\n", n->nb_enfants);
     printf("==profondeur== :\t%d\n", n->profondeur);
-    printf("==B_VALEUR== :\t\t%f\n\n", n->B);
+    //printf("==B_VALEUR== :\t\t%f\n\n", n->B);
 
 }
 
-
-// Créer un nouveau noeud en jouant un coup à partir d'un parent
-// utiliser nouveauNoeud(NULL, NULL) pour créer la racine
 Noeud * nouveauNoeud (Noeud * parent, Coup * coup ) {
 
 	
@@ -372,12 +294,10 @@ Noeud * nouveauNoeud (Noeud * parent, Coup * coup ) {
 	// POUR MCTS:
 	noeud->nb_victoires = 0;
 	noeud->nb_simus = 0;
-    noeud->B = 0.;
+    noeud->mu = 0.;
 	return noeud;
 }
 
-// Ajouter un enfant à un parent en jouant un coup
-// retourne le pointeur sur l'enfant ajouté
 Noeud * ajouterEnfant(Noeud * parent, Coup * coup) {
 	Noeud * enfant = nouveauNoeud (parent, coup ) ;
 	parent->enfants[parent->nb_enfants] = enfant;
@@ -422,8 +342,6 @@ void freeCoupsExept (Coup ** coups, int k){
 
 }
 
-// Test si l'état est un état terminal
-// et retourne NON, MATCHNUL, ORDI_GAGNE ou HUMAIN_GAGNE
 FinDePartie testFin( Etat * etat ) {
 
 
@@ -496,10 +414,31 @@ FinDePartie testFin( Etat * etat ) {
 	return NON;
 }
 
+float B(Noeud* n){
+	//printf ("\n\t==calclul du noeuf profondeur %d==\n", n->profondeur);
 
-/**
- *  retourne le noeud à partir duquel developper => toujours une feuille
-*/
+	float res;
+
+	//exploitation
+	float exploit 	= (n->nb_victoires)/(n->nb_simus);//mu
+
+	//exploration
+	Noeud* parent 	= n->parent;
+
+	float ratio  	= (log(parent->nb_simus)) / (n->nb_simus);
+	//printf("(%f)", ratio);
+	float explo 	= C*(sqrt(ratio));
+
+	//printf("\t%f + %f = %f\n",exploit, explo, (exploit + explo));
+	if(n->profondeur%2 != 1){// ligne MIN
+		res		= (-exploit) + explo;
+	} else {			// ligne MAX
+		res		= exploit + explo;
+	}
+
+	return res;
+}
+
 Noeud* selectionner(Noeud * n){
 
 
@@ -548,14 +487,14 @@ Noeud* selectionner(Noeud * n){
 	}else{ // CAS 3 : tous les fils ont été simulé, on va pouvoir descendre d'un étage par le fils ayant la plus grande B_valeur
 		//printf("\nCas : tous les fils simulés\n");
         int i = 0;
-		int Bmax = n->enfants[i]->B;
+		float Bmax = B(n->enfants[i]);
 		Noeud * fils = n->enfants[i];
  		//printf("Les B-val : %d:%f\t", i, n->enfants[i]->B);
 
 		for(i = 1; i < k; i++){
             //printf("%d:%f\t", i, n->enfants[i]->B);
-			if(n->enfants[i]->B > Bmax){
-				Bmax = n->enfants[i]->B;
+			if(B(n->enfants[i]) > Bmax){
+				Bmax = B(n->enfants[i]);
 				fils =  n->enfants[i];
 			}
 		} 
@@ -565,10 +504,6 @@ Noeud* selectionner(Noeud * n){
 
 }
 
-/**
- * Développe les noeuds d'une feuille en instanciant ses fils
- * et retourne un noeud fils random pour le simuler jusqu'a une fin de partie
- */
 Noeud* developper(Noeud * n){
 
 	//c'est une feuille on developpe pas
@@ -606,51 +541,25 @@ Noeud* developper(Noeud * n){
 	return n->enfants[r];
 }
 
-/**
- * calcule la B valeur du noeud n et le met à jour dans la structure
-*/
-
-void B(Noeud* n){
-	//printf ("\n\t==calclul du noeuf profondeur %d==\n", n->profondeur);
-	//exploitation
-
-	float exploit 	= (n->nb_victoires)/(n->nb_simus);
-
-	//exploration
-	Noeud* parent 	= n->parent;
-
-	float ratio  	= (log(parent->nb_simus)) / (n->nb_simus);
-	//printf("(%f)", ratio);
-	float explo 	= C*(sqrt(ratio));
-
-	//printf("\t%f + %f = %f\n",exploit, explo, (exploit + explo));
-	if(n->profondeur%2 != 1){// ligne MIN
-		n->B 		= (-exploit) + explo;
-	} else {			// ligne MAX
-		n->B		= exploit + explo;
-	}
-
-}
-
 void mise_a_jour(Noeud* n, int res){
 
-	n->nb_simus = n->nb_simus +1;
-	if(res == ORDI_GAGNE ){
-		n->nb_victoires = n->nb_victoires +5;
-	}
-	if(res == HUMAIN_GAGNE ){
-		n->nb_victoires = n->nb_victoires -5;
+	if(res == ORDI_GAGNE && n->joueur == 0){
+		n->nb_victoires = n->nb_victoires +1;
 	}
 
+	if(res == HUMAIN_GAGNE && n->joueur == 1){
+		n->nb_victoires = n->nb_victoires +1;
+	}
+
+	n->mu = ((n->nb_simus*n->mu) + res)/n->nb_simus+1;// µ(i) = N(i)µ(i)+res / N(i)+1
+	n->nb_simus = n->nb_simus +1; //N(i)+1
 
 	if(n->parent==NULL){  //racine on arrete (il faut mettre a jour la racine)
 		return;
 	}else{
 		mise_a_jour(n->parent, res);
-		B(n); //met a jour la B valeur du noeud
 	}
 }
-
 
 void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 
@@ -685,11 +594,6 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 	mise_a_jour(n, fini);
 }
 
-
-/**
-* Calcule et joue un coup de l'ordinateur avec MCTS-UCT
-* en tempsmax secondes
-*/
 void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	clock_t tic, toc;
@@ -744,11 +648,11 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	} while ( temps < tempsmax );
 
 	/* fin de l'algorithme  */
-	float BMAX = -9999; //-inf
+	float BMAX = B(racine->enfants[0]); //-inf
 	int enf = 0;
-	for(int i = 0; i < k; i++){
-		if(racine->enfants[i]->B > BMAX){
-			BMAX = racine->enfants[i]->B;
+	for(int i = 1; i < k; i++){
+		if(B(racine->enfants[i]) > BMAX){
+			BMAX = B(racine->enfants[i]);
 			enf = i;
 		}
 	}
@@ -773,6 +677,7 @@ void sep(){
 	printf("\n==================================\n");
 }
 
+/*
 void procedure_test_etat(){
 
 	Etat * haut = etat_haut();
@@ -808,6 +713,7 @@ void procedure_test_etat(){
 	sep();
 
 }
+*/
 
 int main(void) {
 	srand(time(NULL));

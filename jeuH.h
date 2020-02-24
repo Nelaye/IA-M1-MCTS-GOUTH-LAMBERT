@@ -4,7 +4,7 @@
 // Paramètres du jeu
 #define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
 
-#define TEMPS 5		// temps de calcul pour un coup avec MCTS (en secondes)
+#define TEMPS 30		// temps de calcul pour un coup avec MCTS (en secondes)
 
 #define LIGNE 6
 #define COLONNE 7

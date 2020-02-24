@@ -12,7 +12,7 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SEC 5	//temps que mets l'algo a trouver le meilleur coup
+#define SEC 10	//temps que mets l'algo a trouver le meilleur coup
 
 #define C 2	//compromis entre exploitation et exploration dans le calcule de la B valeur
 

@@ -327,7 +327,6 @@ void freeCoups (Coup ** coups){
         free(coups[i]);
         i++;
     }
-    free(coups);
 
 }
 
@@ -686,9 +685,9 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 
 	// Penser à libérer la mémoire :
-	//freeCoups(coups);
+	freeCoups(coups);
 	printf("free coups\n");
-	//freeNoeud(racine); // A CORRIGER TODO TODO
+	freeNoeud(racine); // A CORRIGER TODO TODO
 	printf("free neoud\n");
 	fflush(0);
 

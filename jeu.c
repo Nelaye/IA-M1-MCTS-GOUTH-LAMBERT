@@ -236,6 +236,8 @@ Coup ** coups_possibles( Etat * etat , int *k) {
 	}
 
 	coups[*k] = NULL;
+
+	//liberer le free par rapport au k | | | k | | | | NULL  |
 	//printf("il y a %d\n",*k);
 
 	return coups;
@@ -308,17 +310,20 @@ Noeud * ajouterEnfant(Noeud * parent, Coup * coup) {
 }
 
 void freeNoeud ( Noeud * noeud) {
-	if ( noeud->etat != NULL)
-		free (noeud->etat);
+	if (noeud != NULL){
+		if ( noeud->etat != NULL)
+			free (noeud->etat);
 
-	while ( noeud->nb_enfants > 0 ) {
-		freeNoeud(noeud->enfants[noeud->nb_enfants-1]);
-		noeud->nb_enfants --;
-	}
-	if ( noeud->coup != NULL)
-		free(noeud->coup);
-	
-	free(noeud);
+		while ( noeud->nb_enfants > 0 ) {
+			freeNoeud(noeud->enfants[noeud->nb_enfants-1]);
+			noeud->nb_enfants --;
+		}
+
+		if ( noeud->coup != NULL)
+			free(noeud->coup);
+		
+		free(noeud);
+	}		
 }
 
 void freeCoups (Coup ** coups){
@@ -519,6 +524,8 @@ Noeud* developper(Noeud * n){
 			Noeud* enfant = ajouterEnfant(n, coups[i]);
 			//printf("enfant %d\n",i);
 			//afficher_noeud(enfant);
+		} else {
+			free(coups[i]);
 		}
 		Etat * e = copieEtat(n->etat);
 	}
@@ -533,9 +540,9 @@ Noeud* developper(Noeud * n){
 		*/
 	int r = rand()%k;
 	//printf("R = %d\n",r);
-    free(e);
-    //freeCoups(coups); //surtout pas free les coups sinon on perd la référence du coups dans le noeud enfant
-    //et cela cause un SEG FAULT
+    	free(e);
+    	//freeCoups(coups); //surtout pas free les coups sinon on perd la référence du coups dans le noeud enfant
+    	//et cela cause un SEG FAULT
 	return n->enfants[r];
 }
 
@@ -545,7 +552,7 @@ void mise_a_jour(Noeud* n, int res){
 		n->nb_victoires = n->nb_victoires +1;
 	}*/
 
-if(res == ORDI_GAGNE ){
+	if(res == ORDI_GAGNE ){
 		n->nb_victoires = n->nb_victoires +1;
 	}
 
@@ -634,7 +641,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		fflush(0);*/
 		Noeud * n = selectionner(racine);
 
-		//Developper (selection du chemin/fils a prendre)
+		//Developper (selection du chemin/fils a prendre)rrors, rerun with: -v
 		/*printf("**DEVELOPPEMENT**\n");
 		fflush(0);*/
 		Noeud * s = developper(n);
@@ -685,7 +692,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 
 	// Penser à libérer la mémoire :
-	freeCoups(coups);
+	//freeCoups(coups);
 	printf("free coups\n");
 	freeNoeud(racine); // A CORRIGER TODO TODO
 	printf("free neoud\n");
@@ -773,6 +780,7 @@ int main(void) {
 
 
 	Coup * coup;
+	int jouer_coup = TRUE;
 	while ( fin == NON ) { // boucle de jeu
 
 		printf("\n");
@@ -781,12 +789,15 @@ int main(void) {
 
 		if ( etat->joueur == 0 ) {// tour de l'humain
 			do{
+				
 				printf("ici\n");
 				fflush(0);
 				coup = demanderCoup();
 				printf("là\n");
 				fflush(0);
-			}while( !jouerCoup(etat, coup) );
+				jouer_coup = jouerCoup(etat, coup);
+				free(coup);
+			}while(!jouer_coup);
 		}
 		else {// tour de l'Ordinateur
 			ordijoue_mcts(etat, SEC);
@@ -805,6 +816,7 @@ int main(void) {
 	else
 		printf( "** BRAVO, l'ordinateur a perdu  **\n");
 
-
+	
+	//free(etat);
 	return 0;
 }

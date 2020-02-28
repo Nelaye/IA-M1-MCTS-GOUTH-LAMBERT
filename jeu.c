@@ -20,6 +20,8 @@ Etat * copieEtat( Etat * src ) {
 	Etat * etat = (Etat *)malloc(sizeof(Etat));
 	etat->joueur = src->joueur;
 
+	assert(&(etat->joueur) != &(src->joueur));	
+
 	int i,j;
 	for (i=0; i< LIGNE; i++){
 		for ( j=0; j<COLONNE; j++){
@@ -45,7 +47,7 @@ Etat * etat_initial() {
     etat->joueur = 0;
 	return etat;
 }
-/*
+
 // Etat gagne ligne 
 Etat * etat_ligne() {
 
@@ -133,7 +135,7 @@ Etat * etat_haut() {
     etat->joueur = 0;
 	return etat;
 }
-*/
+
 void afficheJeu(Etat * etat) {
 
 	// TODO: à compléter
@@ -234,6 +236,8 @@ Coup ** coups_possibles( Etat * etat , int *k) {
 	}
 
 	coups[*k] = NULL;
+
+	//liberer le free par rapport au k | | | k | | | | NULL  |
 	//printf("il y a %d\n",*k);
 
 	return coups;
@@ -306,17 +310,20 @@ Noeud * ajouterEnfant(Noeud * parent, Coup * coup) {
 }
 
 void freeNoeud ( Noeud * noeud) {
-	if ( noeud->etat != NULL)
-		free (noeud->etat);
+	if (noeud != NULL){
+		if ( noeud->etat != NULL)
+			free (noeud->etat);
 
-	while ( noeud->nb_enfants > 0 ) {
-		freeNoeud(noeud->enfants[noeud->nb_enfants-1]);
-		noeud->nb_enfants --;
-	}
-	if ( noeud->coup != NULL)
-		free(noeud->coup);
+		while ( noeud->nb_enfants > 0 ) {
+			freeNoeud(noeud->enfants[noeud->nb_enfants-1]);
+			noeud->nb_enfants --;
+		}
 
-	free(noeud);
+		if ( noeud->coup != NULL)
+			free(noeud->coup);
+		
+		free(noeud);
+	}		
 }
 
 void freeCoups (Coup ** coups){
@@ -325,7 +332,6 @@ void freeCoups (Coup ** coups){
         free(coups[i]);
         i++;
     }
-    free(coups);
 
 }
 
@@ -347,9 +353,6 @@ FinDePartie testFin( Etat * etat ) {
 
 	// tester si un joueur a gagné
 	int i,j,k,n = 0;
-
-
-
 	for (i=0;i < LIGNE; i++) {
 		for (j=0; j < COLONNE; j++) {
 			//printf("\nje suis dans le cas i=%d et j=%d\n",i,j);
@@ -359,10 +362,10 @@ FinDePartie testFin( Etat * etat ) {
 
 				// lignes
 				k=0;
-
-				while ( k < 4 && i+k < COLONNE && etat->plateau[i+k][j] == etat->plateau[i][j] ){
+				while ( k < 4 && i+k < LIGNE && etat->plateau[i+k][j] == etat->plateau[i][j] ){
 					//printf("while ligne\n");
 					k++;
+					
 				}
 
 				if ( k == 4 ){
@@ -372,7 +375,7 @@ FinDePartie testFin( Etat * etat ) {
 
 				// colonnes
 				k=0;
-				while ( k < 4 && j+k < LIGNE && etat->plateau[i][j+k] == etat->plateau[i][j] ){
+				while ( k < 4 && j+k < COLONNE && etat->plateau[i][j+k] == etat->plateau[i][j] ){
 					//printf("while colonne\n");
 					k++;
 				}
@@ -384,7 +387,7 @@ FinDePartie testFin( Etat * etat ) {
 
 				// diagonales
 				k=0;
-				while ( k < 4 && i+k < COLONNE && j+k < LIGNE && etat->plateau[i+k][j+k] == etat->plateau[i][j] ){
+				while ( k < 4 && i+k < LIGNE && j+k < COLONNE && etat->plateau[i+k][j+k] == etat->plateau[i][j] ){
 					//printf("while diag 1\n");
 					k++;
 				}
@@ -394,7 +397,7 @@ FinDePartie testFin( Etat * etat ) {
 				}
 
 				k=0;
-				while ( k < 4 && i+k < COLONNE && j-k >= 0 && etat->plateau[i+k][j-k] == etat->plateau[i][j] ){
+				while ( k < 4 && i+k < LIGNE && j-k >= 0 && etat->plateau[i+k][j-k] == etat->plateau[i][j] ){
 					//printf("while diag 2\n");
 					k++;
 				}
@@ -521,6 +524,8 @@ Noeud* developper(Noeud * n){
 			Noeud* enfant = ajouterEnfant(n, coups[i]);
 			//printf("enfant %d\n",i);
 			//afficher_noeud(enfant);
+		} else {
+			free(coups[i]);
 		}
 		Etat * e = copieEtat(n->etat);
 	}
@@ -535,21 +540,25 @@ Noeud* developper(Noeud * n){
 		*/
 	int r = rand()%k;
 	//printf("R = %d\n",r);
-    free(e);
-    //freeCoups(coups); //surtout pas free les coups sinon on perd la référence du coups dans le noeud enfant
-    //et cela cause un SEG FAULT
+    	free(e);
+    	//freeCoups(coups); //surtout pas free les coups sinon on perd la référence du coups dans le noeud enfant
+    	//et cela cause un SEG FAULT
 	return n->enfants[r];
 }
 
 void mise_a_jour(Noeud* n, int res){
 
-	if(res == ORDI_GAGNE && n->joueur == 0){
+	/*if(res == ORDI_GAGNE && n->joueur == 0){
+		n->nb_victoires = n->nb_victoires +1;
+	}*/
+
+	if(res == ORDI_GAGNE ){
 		n->nb_victoires = n->nb_victoires +1;
 	}
 
-	if(res == HUMAIN_GAGNE && n->joueur == 1){
+	/*if(res == HUMAIN_GAGNE && n->joueur == 1){
 		n->nb_victoires = n->nb_victoires +1;
-	}
+	}*/
 
 	n->mu = ((n->nb_simus*n->mu) + res)/n->nb_simus+1;// µ(i) = N(i)µ(i)+res / N(i)+1
 	n->nb_simus = n->nb_simus +1; //N(i)+1
@@ -632,7 +641,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		fflush(0);*/
 		Noeud * n = selectionner(racine);
 
-		//Developper (selection du chemin/fils a prendre)
+		//Developper (selection du chemin/fils a prendre)rrors, rerun with: -v
 		/*printf("**DEVELOPPEMENT**\n");
 		fflush(0);*/
 		Noeud * s = developper(n);
@@ -648,41 +657,69 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	} while ( temps < tempsmax );
 
 	/* fin de l'algorithme  */
-	float BMAX = B(racine->enfants[0]); //-inf
+
+
+	/** CHOIX DU MEILLEUR COUP **/ 
+
+
+	float RATIO_MAX = (float)racine->enfants[0]->nb_victoires/(float)racine->enfants[0]->nb_simus;
 	int enf = 0;
+	printf("%f de %d\n", RATIO_MAX, enf);
 	for(int i = 1; i < k; i++){
-		if(B(racine->enfants[i]) > BMAX){
-			BMAX = B(racine->enfants[i]);
+		float ratio = (float)racine->enfants[i]->nb_victoires/(float)racine->enfants[i]->nb_simus;
+		printf("%f de %d\n", ratio, i);
+		if(ratio > RATIO_MAX){
+			RATIO_MAX = ratio;
 			enf = i;
 		}
 	}
 
+	printf("Au final on choisi : %f de %d\n", RATIO_MAX, enf);
+
 	meilleur_coup = coups[enf];
 
-	printf ("ordi joue le coup numero %d à la ligne %d et colonne %d\n", enf, coups[enf]->ligne, coups[enf]->colonne);
+	//printf ("ordi joue le coup numero %d à la ligne %d et colonne %d\n", enf, coups[enf]->ligne, coups[enf]->colonne);
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
 	
-	printf("coup joué\n");
+
+
+	//QUESTION 1//
+	int nb_simu = racine->nb_simus;
+	float proba = (float)racine->nb_victoires/(float)nb_simu;
+	printf("%d / %d == %f \n", nb_simu, racine->nb_victoires, proba);
+	printf ("\nNombre de simu total effectue : %d\t proba de gagner : %f \n", nb_simu, proba);
+
 
 	// Penser à libérer la mémoire :
 	//freeCoups(coups);
 	printf("free coups\n");
-	//freeNoeud(racine); // A CORRIGER TODO TODO
+	freeNoeud(racine); // A CORRIGER TODO TODO
 	printf("free neoud\n");
 	fflush(0);
+
+
 }
 
 void sep(){
 	printf("\n==================================\n");
 }
 
-/*
+
 void procedure_test_etat(){
+
+	Etat * vide = etat_initial();
+	afficheJeu(vide);
+	FinDePartie fin = testFin(vide);
+	
+	printf("%d", fin);
+
+	sep();
+ 
 
 	Etat * haut = etat_haut();
 	afficheJeu(haut);
-	FinDePartie fin = testFin(haut);
+	fin = testFin(haut);
 
 	printf("%d", fin);
 
@@ -713,11 +750,11 @@ void procedure_test_etat(){
 	sep();
 
 }
-*/
+
 
 int main(void) {
 	srand(time(NULL));
-	FinDePartie fin;
+	FinDePartie fin = 0; //NON
 
 	//procedure_test_etat();
 	// initialisation
@@ -743,6 +780,7 @@ int main(void) {
 
 
 	Coup * coup;
+	int jouer_coup = TRUE;
 	while ( fin == NON ) { // boucle de jeu
 
 		printf("\n");
@@ -751,12 +789,15 @@ int main(void) {
 
 		if ( etat->joueur == 0 ) {// tour de l'humain
 			do{
+				
 				printf("ici\n");
 				fflush(0);
 				coup = demanderCoup();
 				printf("là\n");
 				fflush(0);
-			}while( !jouerCoup(etat, coup) );
+				jouer_coup = jouerCoup(etat, coup);
+				free(coup);
+			}while(!jouer_coup);
 		}
 		else {// tour de l'Ordinateur
 			ordijoue_mcts(etat, SEC);
@@ -775,6 +816,7 @@ int main(void) {
 	else
 		printf( "** BRAVO, l'ordinateur a perdu  **\n");
 
-
+	
+	//free(etat);
 	return 0;
 }

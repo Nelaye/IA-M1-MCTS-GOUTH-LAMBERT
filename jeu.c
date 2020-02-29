@@ -178,9 +178,12 @@ Coup * demanderCoup () {
 
 	/* par exemple : */
 	int i,j;
-	printf(" quelle colonne ? ") ;
-	fflush(0);
-	scanf("%d",&j);
+	int check;
+	do{
+		printf(" quelle colonne ? ") ;
+    	check = scanf("%d",&j);
+    	while(getchar()!='\n'); // clean the input buffer
+	}while(check < 0 && check > 7);
 	i=0;
 
 	return nouveauCoup(i,j);
@@ -572,48 +575,46 @@ void mise_a_jour(Noeud* n, int res){
 
 void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé (-1,0,1)
 
-
+	printf("START\n");
 	Etat * e = copieEtat(n->etat);
 	int fini = testFin(e);
-	int k = 0;
+	int coups_maxi = 0;
 	int i = -1;
 	int profondeur = 0;
 	//printf("\nsimulation\n");
 
-	while(!fini){
-		Coup ** coups = coups_possibles(e, &k);
-		//printf("k= %d, i= %d\n",k,i);
+	while(!fini){ //tant qu'on a pas une feuille
 
-		/*if(k==0){ //plus de coups possible
-			fini = 1; // ?????? 1 egal egalité dans l'enum
-			continue;
-		}*/
-		
+
+		Coup ** coups = coups_possibles(e, &coups_maxi);
+	
 		if( !opti ){ // sans optimisation 
-			i = rand()%k;
+			i = rand()%coups_maxi;
 		}else{ // avec optimisation 
-
 			Etat * tmp = copieEtat(n->etat);
-			for(int j = 0; j < k; j++){ // je parcours et je cherche une coup gagnant en 1 coup
+			for(int j = 0; j < coups_maxi; j++){ // je parcours et je cherche une coup gagnant en 1 coup
 				jouerCoup(tmp, coups[j]);
-				if(testFin(tmp) == ORDI_GAGNE ){
+				if(testFin(tmp) == ORDI_GAGNE){
 					i = j;
+					afficheJeu(tmp);
 					break;
 				}
+				
 				free(tmp);
 				tmp = copieEtat(n->etat);
 			}
 			if( i == -1){ // si aucun coup gagnant alors choix aléatoir
-				i = rand()%k;
+				i = rand()%coups_maxi;
 			}
 			free(tmp);
 		}
-		
-
+		printf("coup[%d] : %d / %d \n", i, coups[i]->ligne, coups[i]->colonne);
 		jouerCoup(e , coups[i]);
+		printf("here3\n");
 		//afficheJeu(e);
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
+		printf("here4\n");
 		//printf("%d",fini);
 		//printf("Fini %d\n",fini);
 		//printf("Coup numéro : %d\n", ++profondeur);
@@ -652,6 +653,8 @@ void ordijoue_mcts(Etat * etat, int tempsmax, int opti) {
 		//simuler(enfant);
 		i++;
 	}
+	simuler(racine, opti);
+	exit(42);
 
 	int iter = 0;
 
@@ -807,6 +810,7 @@ int main(int argc, char * argv[]) {
 
 	Etat * etat = etat_initial();
 
+	
 	/*Noeud * children = developper(selectionner(n));
 	printf("j'ai choisi :\n");
 	afficher_noeud(children);
@@ -835,11 +839,8 @@ int main(int argc, char * argv[]) {
 
 		if ( etat->joueur == 0 ) {// tour de l'humain
 			do{
-				
-				printf("ici\n");
 				fflush(0);
 				coup = demanderCoup();
-				printf("là\n");
 				fflush(0);
 				jouer_coup = jouerCoup(etat, coup);
 				free(coup);

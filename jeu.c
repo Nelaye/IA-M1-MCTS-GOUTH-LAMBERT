@@ -545,7 +545,7 @@ void mise_a_jour(Noeud* n, int res){
 		n->nb_victoires = n->nb_victoires +1;
 	}*/
 
-if(res == ORDI_GAGNE ){
+	if(res == ORDI_GAGNE ){
 		n->nb_victoires = n->nb_victoires +1;
 	}
 
@@ -563,23 +563,44 @@ if(res == ORDI_GAGNE ){
 	}
 }
 
-void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
+void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé (-1,0,1)
 
 
 	Etat * e = copieEtat(n->etat);
 	int fini = testFin(e);
 	int k = 0;
+	int i = -1;
 	int profondeur = 0;
 	//printf("\nsimulation\n");
+
 	while(!fini){
 		Coup ** coups = coups_possibles(e, &k);
+		//printf("k= %d, i= %d\n",k,i);
+
 		/*if(k==0){ //plus de coups possible
 			fini = 1; // ?????? 1 egal egalité dans l'enum
 			continue;
 		}*/
 		
-		int i = rand()%k;
-		//printf("k= %d, i= %d\n",k,i);
+		if( !opti ){ // sans optimisation 
+			i = rand()%k;
+		}else{ // avec optimisation 
+
+			Etat * tmp = copieEtat(n->etat);
+			for(int j = 0; j < k; j++){ // je parcours et je cherche une coup gagnant en 1 coup
+				if( testFin( joueurCoup(tmp,coups[j]) ) == ORDI_GAGNE ){
+					i = j;
+					break;
+				}
+				free(tmp);
+				tmp = copieEtat(n->etat);
+			}
+			if( i == -1){ // si aucun coup gagnant alors choix aléatoir
+				i = rand()%k;
+			}
+			free(tmp);
+		}
+		
 
 		jouerCoup(e , coups[i]);
 		//afficheJeu(e);
@@ -588,7 +609,6 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 		//printf("%d",fini);
 		//printf("Fini %d\n",fini);
 		//printf("Coup numéro : %d\n", ++profondeur);
-
 		freeCoups(coups);
 	}
 	free (e);
@@ -596,7 +616,7 @@ void simuler(Noeud * n){ // retourne le résultat de la partie simulé (-1,0,1)
 	mise_a_jour(n, fini);
 }
 
-void ordijoue_mcts(Etat * etat, int tempsmax) {
+void ordijoue_mcts(Etat * etat, int tempsmax, int opti) {
 
 	clock_t tic, toc;
 	tic = clock();
@@ -642,7 +662,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		//simuler ce chemin
 		/*printf("**SIMULATION**\n");
 		fflush(0);*/
-		simuler(s); //simule et met a jour les B valeurs
+		simuler(s,opti); //simule et met a jour les B valeurs
 		
 		toc = clock();
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
@@ -698,7 +718,6 @@ void sep(){
 	printf("\n==================================\n");
 }
 
-
 void procedure_test_etat(){
 
 	Etat * vide = etat_initial();
@@ -745,12 +764,18 @@ void procedure_test_etat(){
 }
 
 
-int main(void) {
+int main(int argc, char * args[]) {
+
+	int opti = 0;
+	if(args[0] == 'y'){
+		opti = 1;
+	}
+
 	srand(time(NULL));
 	FinDePartie fin = 0; //NON
 
 	//procedure_test_etat();
-	// initialisation
+	//initialisation
 
 	Etat * etat = etat_initial();
 
@@ -762,7 +787,7 @@ int main(void) {
 	/*ordijoue_mcts(n->etat, 1); //3s de temps max
 	free( etat );
 	free( n );
-*/
+	*/
 
 
 	// Choisir qui commence :
@@ -789,7 +814,7 @@ int main(void) {
 			}while( !jouerCoup(etat, coup) );
 		}
 		else {// tour de l'Ordinateur
-			ordijoue_mcts(etat, SEC);
+			ordijoue_mcts(etat, SEC, opti);
 		}
 		fin = testFin( etat );
 		//free(coup);

@@ -128,13 +128,13 @@ Noeud* developper(Noeud * n);
 
 void mise_a_jour(Noeud* n, int res);
 
-void simuler(Noeud * n);
+void simuler(Noeud * n, int opti);
 
 /**
 * Calcule et joue un coup de l'ordinateur avec MCTS-UCT
 * en tempsmax secondes
 */
-void ordijoue_mcts(Etat * etat, int tempsmax); 
+void ordijoue_mcts(Etat * etat, int tempsmax,  int opti); 
 
 void sep();
 

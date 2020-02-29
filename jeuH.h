@@ -12,9 +12,11 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SEC 10	//temps que mets l'algo a trouver le meilleur coup
+#define SEC 1	//temps que mets l'algo a trouver le meilleur coup
 
 #define C 2	//compromis entre exploitation et exploration dans le calcule de la B valeur
+
+
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -128,13 +130,13 @@ Noeud* developper(Noeud * n);
 
 void mise_a_jour(Noeud* n, int res);
 
-void simuler(Noeud * n);
+void simuler(Noeud * n, int opti);
 
 /**
 * Calcule et joue un coup de l'ordinateur avec MCTS-UCT
 * en tempsmax secondes
 */
-void ordijoue_mcts(Etat * etat, int tempsmax); 
+void ordijoue_mcts(Etat * etat, int tempsmax, int opti); 
 
 void sep();
 

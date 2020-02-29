@@ -595,7 +595,8 @@ void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé
 
 			Etat * tmp = copieEtat(n->etat);
 			for(int j = 0; j < k; j++){ // je parcours et je cherche une coup gagnant en 1 coup
-				if( testFin( joueurCoup(tmp,coups[j]) ) == ORDI_GAGNE ){
+				jouerCoup(tmp, coups[j]);
+				if(testFin(tmp) == ORDI_GAGNE ){
 					i = j;
 					break;
 				}
@@ -771,12 +772,32 @@ void procedure_test_etat(){
 }
 
 
-int main(int argc, char * args[]) {
+int main(int argc, char * argv[]) {
 
 	int opti = 0;
-	if(args[0] == 'y'){
-		opti = 1;
+	int critere = 0;
+	if(argc != 3){
+		printf("usage : ./jeu [y/n][m/r]\n1st param : opti simulaiton\n2nd param : critere max / robuste\n");
+		exit(1);
 	}
+
+	//printf("%s |%s | %s", argv[0], argv[1], argv[2]);
+
+
+	if(!strcmp(argv[1],"y")){
+		printf("optimisation des simulations\n");
+		opti = 1;
+	} else {
+		printf("pas d'optimisation des simulations\n");
+	}
+	if (!strcmp(argv[2],"r")){
+		printf("critere sur la robustesse\n");
+		critere = 1;
+	}  else {
+		printf("critere sur la maximisation\n");
+	}
+
+
 
 	srand(time(NULL));
 	FinDePartie fin = 0; //NON

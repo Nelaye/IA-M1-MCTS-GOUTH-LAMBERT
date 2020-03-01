@@ -257,7 +257,12 @@ void afficher_noeud(Noeud * n){
     (n->joueur==0)?printf("ORDI\n"): printf("HUMAN\n");
 
     printf("\n");
-	afficheJeu(n->etat);
+	printf("nb_simu : %d \n",  n->nb_simus);
+	printf("nb_victoire : %d \n", n->nb_victoires);
+	printf("nb_enfants : %d \n", n->nb_enfants);
+
+	printf("===B=%f===", B(n));
+	//afficheJeu(n->etat);
 	printf("\n");
 
     if(n->parent!=NULL)//si ce n'est pas la racine, sinon SEG FAULT
@@ -618,7 +623,7 @@ void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé
 	mise_a_jour(n, fini);
 }
 
-void ordijoue_mcts(Etat * etat, int tempsmax, int opti) {
+void ordijoue_mcts(Etat * etat, int tempsmax, int opti, int critere) {
 
 	clock_t tic, toc;
 	tic = clock();
@@ -673,23 +678,39 @@ void ordijoue_mcts(Etat * etat, int tempsmax, int opti) {
 
 	/* fin de l'algorithme  */
 
-
-	/** CHOIX DU MEILLEUR COUP **/ 
-
-
-	float RATIO_MAX = (float)racine->enfants[0]->nb_victoires/(float)racine->enfants[0]->nb_simus;
-	int enf = 0;
-	printf("%f de %d\n", RATIO_MAX, enf);
-	for(int i = 1; i < k; i++){
-		float ratio = (float)racine->enfants[i]->nb_victoires/(float)racine->enfants[i]->nb_simus;
-		printf("%f de %d\n", ratio, i);
-		if(ratio > RATIO_MAX){
-			RATIO_MAX = ratio;
-			enf = i;
-		}
+	for(int i = 0; i < k; i++){
+		afficher_noeud(racine->enfants[i]);
+		printf("\n");
 	}
+	/** CHOIX DU MEILLEUR COUP **/ 
+	int enf = 0;
 
-	printf("Au final on choisi : %f de %d\n", RATIO_MAX, enf);
+	if(critere){ //critere robustesse
+		int SIMU_MAX = racine->enfants[0]->nb_simus;
+		for(int i = 1; i < k; i++){
+			int nb_simu = racine->enfants[i]->nb_simus;
+			printf("%d de %d\n", nb_simu, i);
+			if(nb_simu > SIMU_MAX){
+				SIMU_MAX = nb_simu;
+				enf = i;
+			}
+		}
+		printf("Au final on choisi nb de simu: %d de %d\n", SIMU_MAX, enf);
+	} else { 	//critere maximisation
+		float RATIO_MAX = (float)racine->enfants[0]->nb_victoires/(float)racine->enfants[0]->nb_simus;
+		printf("%f de %d\n", RATIO_MAX, enf);
+		for(int i = 1; i < k; i++){
+			float ratio = (float)racine->enfants[i]->nb_victoires/(float)racine->enfants[i]->nb_simus;
+			printf("%f de %d\n", ratio, i);
+			if(ratio > RATIO_MAX){
+				RATIO_MAX = ratio;
+				enf = i;
+			}
+		}
+		printf("Au final on choisi le ratio victoire/simu : %f de %d\n", RATIO_MAX, enf);
+	}
+	
+	
 
 	meilleur_coup = coups[enf];
 
@@ -838,7 +859,7 @@ int main(int argc, char * argv[]) {
 			}while(!jouer_coup);
 		}
 		else {// tour de l'Ordinateur
-			ordijoue_mcts(etat, SEC, opti);
+			ordijoue_mcts(etat, SEC, opti, critere);
 		}
 		fin = testFin( etat );
 		//free(coup);

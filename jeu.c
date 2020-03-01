@@ -567,10 +567,6 @@ void ordijoue_mcts(Etat * etat, int tempsmax, int opti, int critere) {
 
 	/* fin de l'algorithme  */
 
-	for(int i = 0; i < k; i++){
-		afficher_noeud(racine->enfants[i]);
-		printf("\n");
-	}
 	/** CHOIX DU MEILLEUR COUP **/ 
 	int enf = 0;
 

@@ -575,28 +575,25 @@ void mise_a_jour(Noeud* n, int res){
 
 void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé (-1,0,1)
 
-	printf("START\n");
 	Etat * e = copieEtat(n->etat);
 	int fini = testFin(e);
 	int coups_maxi = 0;
-	int i = -1;
-	int profondeur = 0;
-	//printf("\nsimulation\n");
+	int i = -1;	
 
 	while(!fini){ //tant qu'on a pas une feuille
-
-
+		i = -1;
 		Coup ** coups = coups_possibles(e, &coups_maxi);
 	
 		if( !opti ){ // sans optimisation 
 			i = rand()%coups_maxi;
 		}else{ // avec optimisation 
+
+
 			Etat * tmp = copieEtat(n->etat);
 			for(int j = 0; j < coups_maxi; j++){ // je parcours et je cherche une coup gagnant en 1 coup
 				jouerCoup(tmp, coups[j]);
 				if(testFin(tmp) == ORDI_GAGNE){
 					i = j;
-					afficheJeu(tmp);
 					break;
 				}
 				
@@ -608,17 +605,13 @@ void simuler(Noeud * n, int opti){ // retourne le résultat de la partie simulé
 			}
 			free(tmp);
 		}
-		printf("coup[%d] : %d / %d \n", i, coups[i]->ligne, coups[i]->colonne);
+
+		//printf("je joue le coup[%d] : %d / %d \n", i, coups[i]->ligne, coups[i]->colonne);
 		jouerCoup(e , coups[i]);
-		printf("here3\n");
-		//afficheJeu(e);
 
 		fini = testFin(e); // note à moi même : ne pas simuler si dejà une feuille
-		printf("here4\n");
-		//printf("%d",fini);
-		//printf("Fini %d\n",fini);
-		//printf("Coup numéro : %d\n", ++profondeur);
 		freeCoups(coups);
+
 	}
 	free (e);
 
@@ -653,8 +646,6 @@ void ordijoue_mcts(Etat * etat, int tempsmax, int opti) {
 		//simuler(enfant);
 		i++;
 	}
-	simuler(racine, opti);
-	exit(42);
 
 	int iter = 0;
 

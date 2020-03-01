@@ -68,6 +68,18 @@ Etat * copieEtat( Etat * src );
 // Etat initial
 Etat * etat_initial();
 
+// Etat de test, victoire sur une ligne 
+Etat * etat_ligne();
+
+// Etat de test, victoire diagonal haut 
+Etat * etat_diag_haut();
+
+// Etat de test, victoire diagonal bas 
+Etat * etat_diag_bas();
+
+// Etat de test, victoire sur une colonne 
+Etat * etat_haut();
+
 void afficheJeu(Etat * etat);
 
 // Nouveau coup
